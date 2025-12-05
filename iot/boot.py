@@ -13,16 +13,6 @@ import urequests as requests
 import configs.network_config as net_config
 
 
-## configs
-
-VERSION_URL = "https://example.com/firmware/version.txt"
-MAIN_URL = "https://example.com/firmware/main.py"
-
-
-## local configs
-
-
-
 ## functions
 
 def start_wifi():
