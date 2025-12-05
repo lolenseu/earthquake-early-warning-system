@@ -1,19 +1,17 @@
 ## ignored files
 
-## iot python files
+## Python files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
+## IDE files
 pymakr.conf
 
-## iot test files
-*/tests.py
+## Test files
+*/test.py
 */test_*.py
 
-## iot configs
-**/configs/*.py
-
-## Optional: ignore entire configs directories
+## Config directories (covers iot/configs/ and any other configs/)
 **/configs/
