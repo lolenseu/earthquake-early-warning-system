@@ -1,2 +1,2 @@
-SSID = "your-ssid"
-PASSWORD = "your-password"
+SSID = "HUAWEI-2.4G-Uz3F"
+PASSWORD = "ERJd89gm"

@@ -10,51 +10,119 @@ import os
 import urequests as requests
 
 
-import configs.network_config as net_config
+from configs.network_config import SSID, PASSWORD
+from configs.config import VERSION_FILE, VERSION_URL, MAIN_URL
 
 
 ## functions
 
 def start_wifi():
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    wlan.connect(net_config.SSID, net_config.PASSWORD)
-    while not wlan.isconnected():
-        time.sleep(1)
-    print("Connected to WiFi:", wlan.ifconfig())
+    try:
+        wlan = network.WLAN(network.STA_IF)
+        wlan.active(True)
+        wlan.connect(SSID, PASSWORD)
+        
+        timeout = 30 
+        connected = False
+        
+        for i in range(timeout):
+            if wlan.isconnected():
+                connected = True
+                break
+            time.sleep(1)
+        
+        if connected:
+            print("Connected to WiFi:", wlan.ifconfig())
+        else:
+            print("WiFi connection timeout")
+            raise Exception("WiFi connection failed")
+            
+    except Exception as e:
+        print(f"WiFi error: {e}")
+        raise e
+    
+    
+def fech_old_version_info():
+    try:
+        with open(VERSION_FILE, "r") as f:
+            version_info = f.read().strip()
+            
+            if version_info:
+                old_status = version_info[0:4]
+                old_version = version_info[7:]
+                print("Successfully read old version info")
+                return old_status, old_version
+            
+        return None, None
+    except Exception as e:
+        print(f"Error reading old version info: {e}")
+        return None, None
 
+    
+def fech_version_info():
+    try:
+        response = requests.get(VERSION_URL)
+        
+        if response.status_code == 200:
+            response_text = response.text.strip()
+            
+            if response_text:
+                response_status = response_text[0:4]
+                response_version = response_text[7:]
+                print("Response status:", response_status)
+                print("Response version:", response_version)
+                print("Successfully fetched version info")
+                return response_status, response_version
+                
+        return None, None
+    except Exception as e:
+        print(f"Error fetching version info: {e}")
+        return None, None
 
 def check_for_updates():
     try:
-        response = requests.get(VERSION_URL)
-        latest_version = response.text.strip()
-        response.close()
-
-        if not os.path.exists("version.txt"):
-            current_version = "0.0.0"
-        else:
-            with open("version.txt", "r") as f:
-                current_version = f.read().strip()
-
-        if latest_version != current_version:
-            print("New version available:", latest_version)
+        old_status, old_version = fech_old_version_info()
+        status, version = fech_version_info()
+        
+        old_version_patch = old_version.rsplit('.', 1)[-1]
+        version_patch = version.rsplit('.', 1)[-1]
+        
+        if status == "live" and (version_patch != old_version_patch or int(version_patch) > int(old_version_patch)):
+            print("New version available:", version)
+            print("Downloading main.py...")
             response = requests.get(MAIN_URL)
-            with open("main.py", "w") as f:
-                f.write(response.text)
-            response.close()
-
-            with open("version.txt", "w") as f:
-                f.write(latest_version)
-
-            print("Updated to version:", latest_version)
+            
+            if response.status_code == 200:
+                with open("main.py", "w") as f:
+                    f.write(response.text)
+                print("main.py updated to version", version)
+                machine.reset()
+            else:
+                print("Failed to download main.py")
         else:
-            print("Already up to date:", current_version)
+            print("No updates available")
     except Exception as e:
-        print("Error checking for updates:", e)
+        print(f"Error: {e}")
         
 
 def startup():
-    print("Starting up...")
-    start_wifi()
-    check_for_updates()
-    print("Running main.py...")
+    while True: 
+        try:
+            print("Starting up...")
+            start_wifi()
+            check_for_updates()
+            
+            import main
+            if __name__ == "__main__":
+                print("Running main.py...")
+                main.main()
+            
+        except Exception as e:
+            print(f"Startup error: {e}")
+            print("Retrying in 10 seconds...")
+            time.sleep(10)
+            machine.reset()
+
+      
+if __name__ == "__main__":
+    startup()
