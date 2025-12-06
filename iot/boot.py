@@ -199,7 +199,7 @@ def check_for_updates() -> bool:
         old_version_patch = old_version.rsplit('.', 1)[-1]
         version_patch = version.rsplit('.', 1)[-1]
         
-        if status == "live" and (version_patch != old_version_patch or int(version_patch) > int(old_version_patch)):
+        if status in ("live", "test") and int(version_patch) > int(old_version_patch):
             timestamp_print(f"New version available: {version}")
             
             timestamp_print("Updating version info...")
