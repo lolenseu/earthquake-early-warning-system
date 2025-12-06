@@ -13,6 +13,5 @@ pymakr.conf
 */test.py
 */test_*.py
 
-## Config directories
-**/configs/
-iot/configs/
+## config file
+config.py
