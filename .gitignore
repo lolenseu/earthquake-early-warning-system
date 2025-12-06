@@ -12,6 +12,3 @@ pymakr.conf
 ## Test files
 */test.py
 */test_*.py
-
-## config file
-config.py
