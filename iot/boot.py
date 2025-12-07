@@ -14,7 +14,7 @@ from configs.config import *
 from configs.network_config import *
 
 
-## functions
+## call functions
 def get_date_string() -> str:
     """Return current date as YYYY_MM_DD."""
     
@@ -64,7 +64,7 @@ def timestamp_print(message: str) -> int:
     return int(time.time())
 
 
-## procedure functions
+## procedural functions
 def reset_logs() -> None:
     """Reset runtime and error logs for current date."""
     
