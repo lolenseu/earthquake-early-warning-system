@@ -1,7 +1,6 @@
 ## firmware boot.py
 
 ## imports
-
 import machine
 import network
 import ntptime
@@ -16,7 +15,6 @@ from configs.network_config import *
 
 
 ## functions
-
 def get_date_string() -> str:
     """Return current date as YYYY_MM_DD."""
     
