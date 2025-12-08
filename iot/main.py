@@ -2,7 +2,6 @@
 
 ## imports
 import machine
-import network
 import os
 
 import utime as time
@@ -30,8 +29,9 @@ class MPU6050:
             # Wake up sensor
             self.i2c.writeto_mem(self.addr, 0x6B, b'\x00')
             time.sleep(0.1)
+            
         except Exception as e:
-            log_error(f"MPU6050 init failed: {e}")
+            eprint(PRINTSTATUS.ERROR, f"MPU6050 init failed: {e}")
             raise
 
     def read_raw(self, reg):
@@ -44,8 +44,9 @@ class MPU6050:
             if value > 32767:
                 value -= 65536
             return value
+        
         except Exception as e:
-            log_error(f"Read raw failed at reg 0x{reg:02X}: {e}")
+            eprint(PRINTSTATUS.ERROR, f"Read raw failed at reg 0x{reg:02X}: {e}")
             return 0
 
     def read_accel(self):
@@ -56,8 +57,9 @@ class MPU6050:
             ay = self.read_raw(0x3D) / 16384.0
             az = self.read_raw(0x3F) / 16384.0
             return ax, ay, az
+        
         except Exception as e:
-            log_error(f"Read accel failed: {e}")
+            eprint(PRINTSTATUS.ERROR, f"Read accel failed: {e}")
             return 0.0, 0.0, 0.0
 
 
@@ -97,7 +99,7 @@ def detect_earthquake(mpu):
         return None
 
     except Exception as e:
-        log_error(f"Detect earthquake failed: {e}")
+        eprint(PRINTSTATUS.ERROR, f"Detect earthquake failed: {e}")
         return None
     
 def post_data(data):
@@ -108,50 +110,49 @@ def post_data(data):
         response = requests.post(url, json=data, headers=headers)
         
         if response.status_code == 200:
-            #timestamp_print("Data posted successfully.")
+            #tprint(PRINTSTATUS.INFO, "Data posted successfully.")
             pass
         else:
-            #log_error(f"Data post failed with status: {response.status_code}")
+            #eprint(PRINTSTATUS.ERROR, f"Data post failed with PRINTSTATUS: {response.status_code}")
             pass
             
     except Exception as e:
-        log_error(f"Post error: {e}")
-        
-        
+        eprint(PRINTSTATUS.ERROR, f"Post error: {e}")
+
+
 ## procedural functions
 def init_mpu6050():
     """Initialize and return MPU6050 instance."""
     
-    timestamp_print("Initializing MPU6050...")
+    tprint(PRINTSTATUS.INFO, "Initializing MPU6050...")
     
     try:
-        i2c = machine.SoftI2C(scl=machine.Pin(22), sda=machine.Pin(21), freq=400000)
+        i2c = machine.SoftI2C(scl=machine.Pin(param.SLC_PINOUT), sda=machine.Pin(param.SDA_PINOUT), freq=param.I2C_MPU_FREQUENCY)
         devices = i2c.scan()
-        timestamp_print(f"I2C devices found: {devices}")
+        tprint(PRINTSTATUS.INFO, f"I2C devices found: {devices}")
         
         if 0x68 not in devices:
-            log_error("MPU6050 not found at address 0x68")
+            eprint(PRINTSTATUS.ERROR, "MPU6050 not found at address 0x68")
             return None
 
         mpu = MPU6050(i2c)
-        timestamp_print("MPU6050 ready.")
+        tprint(PRINTSTATUS.SUCCESS, "MPU6050 ready.")
         return mpu
-    except Exception as e:
-        log_error(f"MPU6050 init failed: {e}")
-        return None
     
+    except Exception as e:
+        eprint(PRINTSTATUS.ERROR, f"MPU6050 init failed: {e}")
+        return None
+        
 
-## main functions
+## main function  
 def main():
+        
+    tprint(PRINTSTATUS.INFO, "Initializing Hardware...")
     mpu = init_mpu6050()
     if mpu is None:
-        timestamp_print("MPU6050 initialization failed.")
+        tprint(PRINTSTATUS.ERROR, "MPU6050 initialization failed.")
         return
-
-    timestamp_print("Starting earthquake detection...")
     
-    
-    ## local parameters
     earthquake_active = False
     earthquake_start_time = None
     last_state_print = None
@@ -159,64 +160,58 @@ def main():
     counter = 0
     shake_counter = 0
     stable_counter = 0
+    
+    tprint(PRINTSTATUS.INFO, "Starting earthquake detection...")
 
     while True:
-        try:
-            data = detect_earthquake(mpu)
-            now = time.time()
+        data = detect_earthquake(mpu)
+        now = time.time()
 
-            if data:
-                shake_counter += 1
-                stable_counter = 0
-            else:
-                stable_counter += 1
-                shake_counter = 0
+        if data:
+            shake_counter += 1
+            stable_counter = 0
+        else:
+            stable_counter += 1
+            shake_counter = 0
 
-            if shake_counter >= param.REQUIRED_SHAKE_COUNT and not earthquake_active:
-                earthquake_active = True
-                earthquake_start_time = now
-                counter = 0
-                
-                if last_state_print != "earthquake":
-                    timestamp_print("Earthquake detected!")
-                    last_state_print = "earthquake"
+        if shake_counter >= param.REQUIRED_SHAKE_COUNT and not earthquake_active:
+            earthquake_active = True
+            earthquake_start_time = now
+            counter = 0
+            
+            if last_state_print != "earthquake":
+                tprint(PRINTSTATUS.INFO, "Earthquake detected!")
+                last_state_print = "earthquake"
 
-            if stable_counter * param.SAMPLE_INTERVAL >= param.STABLE_TIME and earthquake_active:
-                earthquake_active = False
-                earthquake_start_time = None
-                counter = 0
-                
-                if last_state_print != "normal":
-                    timestamp_print("No earthquake detected.")
-                    last_state_print = "normal"
-
-            if earthquake_active and data:
-                counter += 1
-                post_data(data)
-                timestamp_print(f"Magnitude: {data['g_force']:.3f} g")
-                time.sleep(param.SAMPLE_INTERVAL)
-                continue
-
-            if 0 == 1:
-                if last_state_print != "sleep":
-                    last_state_print = "sleep"
-                    counter = 0
-                    timestamp_print("Entering ultra-low-power mode.")
-                    
-                time.sleep(param.SLEEP_INTERVAL)
-                continue
-
-            if not earthquake_active and last_state_print != "normal":
+        if stable_counter * param.SAMPLE_INTERVAL >= param.STABLE_TIME and earthquake_active:
+            earthquake_active = False
+            earthquake_start_time = None
+            counter = 0
+            
+            if last_state_print != "normal":
+                tprint(PRINTSTATUS.INFO, "No earthquake detected.")
                 last_state_print = "normal"
+
+        if earthquake_active and data:
+            counter += 1
+            post_data(data)
+            tprint(PRINTSTATUS.INFO, f"Magnitude: {data['g_force']:.3f} g")
+            time.sleep(param.SAMPLE_INTERVAL)
+            continue
+
+        if 0 == 1:
+            if last_state_print != "sleep":
+                last_state_print = "sleep"
                 counter = 0
-                timestamp_print("No earthquake detected.")
+                tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode.")
+                
+            time.sleep(param.SLEEP_INTERVAL)
+            continue
 
-            time.sleep(param.NORMAL_INTERVAL)
+        if not earthquake_active and last_state_print != "normal":
+            last_state_print = "normal"
+            counter = 0
+            tprint(PRINTSTATUS.INFO, "No earthquake detected.")
 
-        except Exception as e:
-            error_msg = f"Main loop error: {str(e)}"
-            timestamp_print(error_msg)
-            log_error(error_msg)
-            timestamp_print("Retrying in 10 seconds...")
-            log_error("Retrying in 10 seconds...")
-            time.sleep(10)
+        time.sleep(param.NORMAL_INTERVAL)
+    

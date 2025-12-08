@@ -8,7 +8,14 @@ COUNTER = 0                                 # loop counter
 MAIN_LOOP = 0                               # main loop counter
 MAX_LOOP = 100                              # max loops before restart
 
-## Earthquake detection parameters
+## pinouts
+SLC_PINOUT = 22                             # slc pin
+SDA_PINOUT = 21                             # sda pin
+
+## mpu frequency
+I2C_MPU_FREQUENCY = 400000                  # I2C mpu frequency
+
+## earthquake detection parameters
 EARTHQUAKE_THRESHOLD = 1.35                 # G-force magnitude above this considered earthquake
 SMOOTH_READ_SAMPLING = 1                    # reading samples
 REQUIRED_SHAKE_COUNT = 1                    # earthquake samples to triger
