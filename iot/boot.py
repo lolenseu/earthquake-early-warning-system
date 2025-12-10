@@ -59,7 +59,7 @@ def tprint(printstatus: str, message: str) -> int:
     
     rtc = machine.RTC().datetime()
     timestamp = f"{rtc[0]:04d}-{rtc[1]:02d}-{rtc[2]:02d} {rtc[4]:02d}:{rtc[5]:02d}:{rtc[6]:02d}"
-    full_message = f"[{timestamp}] - [{printstatus}]: {message}"
+    full_message = f"[{timestamp}] - [{printstatus}]: {message}."
     
     print(full_message)  
     log_to_file("runtime", full_message)
@@ -71,7 +71,7 @@ def eprint(printstatus: str, message: str) -> None:
     
     rtc = machine.RTC().datetime()
     timestamp = f"{rtc[0]:04d}-{rtc[1]:02d}-{rtc[2]:02d} {rtc[4]:02d}:{rtc[5]:02d}:{rtc[6]:02d}"
-    full_message = f"[{timestamp}] - [{printstatus}]: {message}"
+    full_message = f"[{timestamp}] - [{printstatus}]: {message}."
     
     log_to_file("error", full_message)
 
@@ -157,6 +157,8 @@ def start_wifi() -> bool:
 def sync_time():
     """Sync device time using NTP."""
     
+    tprint(PRINTSTATUS.INFO, "Syncing time via NTP...")
+    
     try:
         ntptime.settime()
         tprint(PRINTSTATUS.INFO, "Time synced using NTP")
@@ -167,6 +169,8 @@ def sync_time():
 def fech_old_version_info() -> tuple[str | None, str | None]:
     """Read local version file and return (PRINTSTATUS, version)."""
     
+    tprint(PRINTSTATUS.INFO, "Reading old version...")
+    
     try:
         with open(VERSION_FILE, "r") as f:
             version_info = f.read().strip()
@@ -174,13 +178,13 @@ def fech_old_version_info() -> tuple[str | None, str | None]:
             if version_info:
                 old_status = version_info[0:4]
                 old_version = version_info[7:]
-                tprint(PRINTSTATUS.OK, "Successfully read old version info")
+                tprint(PRINTSTATUS.OK, "Successfully read old version")
                 return old_status, old_version
             
         return None, None
     
     except Exception as e:
-        error_msg = f"Error reading old version info: {e}"
+        error_msg = f"Error reading old version: {e}"
         tprint(PRINTSTATUS.ERROR, error_msg)
         eprint(PRINTSTATUS.ERROR, error_msg)
         return None, None
@@ -188,6 +192,8 @@ def fech_old_version_info() -> tuple[str | None, str | None]:
 
 def fech_version_info() -> tuple[str | None, str | None]:
     """Fetch remote version info and return (PRINTSTATUS, version)."""
+    
+    tprint(PRINTSTATUS.INFO, "Fetching latest version...")
     
     try:
         response = requests.get(VERSION_URL, timeout=10)
@@ -199,13 +205,13 @@ def fech_version_info() -> tuple[str | None, str | None]:
                 response_status = response_text[0:4]
                 response_version = response_text[7:]
                 tprint(PRINTSTATUS.INFO, f"Response version: {response_text}")
-                tprint(PRINTSTATUS.OK, "Successfully fetched version info")
+                tprint(PRINTSTATUS.OK, "Successfully fetched version")
                 return response_status, response_version
                 
         return None, None
     
     except Exception as e:
-        error_msg = f"Error fetching version info: {e}"
+        error_msg = f"Error fetching version: {e}"
         tprint(PRINTSTATUS.ERROR, error_msg)
         eprint(PRINTSTATUS.ERROR, error_msg)
         return None, None
@@ -213,6 +219,8 @@ def fech_version_info() -> tuple[str | None, str | None]:
 
 def check_for_updates() -> bool:
     """Check for firmware updates and apply if available."""
+    
+    tprint(PRINTSTATUS.INFO, "Checking for updates...")
     
     try:
         old_status, old_version = fech_old_version_info()
@@ -230,7 +238,7 @@ def check_for_updates() -> bool:
         if status in ("live", "test") and int(version_patch) > int(old_version_patch):
             tprint(PRINTSTATUS.SUCCESS, f"New version available: {version}")
             
-            tprint(PRINTSTATUS.INFO, "Updating version info...")
+            tprint(PRINTSTATUS.INFO, "Updating version...")
             with open(VERSION_FILE, "w") as f:
                 f.write(f"{status} - {version}")
             

@@ -1,4 +1,4 @@
-* IOT DEVICE
+1. IOT DEVICE
 - firmware boot.py 
     - auto logo
     - secure boot
@@ -17,12 +17,12 @@
     - detection
     - main logic
 
-* API
+2. API
     - build the api using pair pipeline structure
 
 
-* WEB PLATFORM
+3. WEB PLATFORM
 
 
 
-* APP
+4. APP

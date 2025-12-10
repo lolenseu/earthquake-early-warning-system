@@ -110,7 +110,7 @@ def post_data(data):
         response = requests.post(url, json=data, headers=headers)
         
         if response.status_code == 200:
-            #tprint(PRINTSTATUS.INFO, "Data posted successfully.")
+            #tprint(PRINTSTATUS.INFO, "Data posted successfully")
             pass
         else:
             #eprint(PRINTSTATUS.ERROR, f"Data post failed with PRINTSTATUS: {response.status_code}")
@@ -136,7 +136,7 @@ def init_mpu6050():
             return None
 
         mpu = MPU6050(i2c)
-        tprint(PRINTSTATUS.SUCCESS, "MPU6050 ready.")
+        tprint(PRINTSTATUS.SUCCESS, "MPU6050 ready")
         return mpu
     
     except Exception as e:
@@ -150,7 +150,7 @@ def main():
     tprint(PRINTSTATUS.INFO, "Initializing Hardware...")
     mpu = init_mpu6050()
     if mpu is None:
-        tprint(PRINTSTATUS.ERROR, "MPU6050 initialization failed.")
+        tprint(PRINTSTATUS.ERROR, "MPU6050 initialization failed")
         return
     
     earthquake_active = False
@@ -189,7 +189,7 @@ def main():
             counter = 0
             
             if last_state_print != "normal":
-                tprint(PRINTSTATUS.INFO, "No earthquake detected.")
+                tprint(PRINTSTATUS.INFO, "No earthquake detected")
                 last_state_print = "normal"
 
         if earthquake_active and data:
@@ -203,7 +203,7 @@ def main():
             if last_state_print != "sleep":
                 last_state_print = "sleep"
                 counter = 0
-                tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode.")
+                tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
                 
             time.sleep(param.SLEEP_INTERVAL)
             continue
@@ -211,7 +211,7 @@ def main():
         if not earthquake_active and last_state_print != "normal":
             last_state_print = "normal"
             counter = 0
-            tprint(PRINTSTATUS.INFO, "No earthquake detected.")
+            tprint(PRINTSTATUS.INFO, "No earthquake detected")
 
         time.sleep(param.NORMAL_INTERVAL)
     
