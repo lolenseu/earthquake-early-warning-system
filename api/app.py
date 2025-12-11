@@ -227,18 +227,19 @@ def pipeline():
         #return Response.error(f'Internal server error: {str(e)}', pipeline_id, timestamp)
         
 # EEWS api
-@app.route('/pipeline/eews', methods=['GET', 'POST'])
+@app.route('/pipeline/eews/post', methods=['GET', 'POST'])
 def earthquake_early_warning_system():
     timestamp = datetime.now().isoformat()
     
     try:
-        device_id: str = request.args.get('device_id')
-        auth_seed: str = request.args.get('auth_seed')
-        x_axis: str = request.args.get('x_axis')
-        y_axis: str = request.args.get('y_axis')
-        z_axis: str = request.args.get('z_axis')
-        g_force: str = request.args.get('g_force')
-        device_timestamp = request.args.get('timestamp')
+        data = request.get_json()
+        device_id = data.get('device_id')
+        auth_seed = data.get('auth_seed')
+        x_axis = data.get('x_axis')
+        y_axis = data.get('y_axis')
+        z_axis = data.get('z_axis')
+        g_force = data.get('g_force')
+        device_timestamp = data.get('device_timestamp')
         
         if not device_id:
             return jsonify({"status": "error", "msg": "device_id missing"}), 400

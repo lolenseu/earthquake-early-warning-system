@@ -55,8 +55,8 @@ class MPU6050:
         try:
             x_axis = self.read_raw(0x3B) / 16384.0
             y_axis = self.read_raw(0x3D) / 16384.0
-            y_axis = self.read_raw(0x3F) / 16384.0
-            return x_axis, y_axis, y_axis
+            z_axis = self.read_raw(0x3F) / 16384.0
+            return x_axis, y_axis, z_axis
         
         except Exception as e:
             eprint(PRINTSTATUS.ERROR, f"Read accel failed: {e}")
@@ -65,14 +65,14 @@ class MPU6050:
 
 ## call functions
 def smooth_read(mpu, samples):
-    total_ax = total_ay = total_az = 0
+    total_x_axis = total_y_axis = total_z_axis = 0
     for _ in range(samples):
         x_axis, y_axis, z_axis = mpu.read_accel()
         total_x_axis += x_axis
         total_y_axis += y_axis
         total_z_axis += z_axis
         
-    return total_ax / samples, total_ay / samples, total_az / samples
+    return total_x_axis / samples, total_y_axis / samples, total_z_axis / samples
     
 def magnitude(x_axis, y_axis, z_axis):
     """Compute magnitude from x_axis, y_axis, z_axis."""
@@ -84,16 +84,16 @@ def detect_earthquake(mpu):
     
     try:
         x_axis, y_axis, z_axis = smooth_read(mpu, param.SMOOTH_READ_SAMPLING)
-        total_g = magnitude(x_axis, y_axis, z_axis)
+        g_force = magnitude(x_axis, y_axis, z_axis)
 
         data = {
             "x_axis": x_axis,
             "y_axis": y_axis,
             "z_axis": z_axis,
-            "g_force": total_g
+            "g_force": g_force
         }
 
-        if total_g >= param.EARTHQUAKE_THRESHOLD:
+        if g_force >= param.EARTHQUAKE_THRESHOLD:
             return data
         return None
 
@@ -104,17 +104,16 @@ def detect_earthquake(mpu):
 def fetch_data():
     """Fetch dats from sever."""
     
-    url = "{API_URL}/eews/fetch"
+    url = f"{API_URL}/eews/fetch"
     json_headers = {"Content-Type": "application/json", "Accept": "application/json"}
     
     try:   
         response = requests.get(url, headers=json_headers)
-        response.close()
         
         if response.status_code == 200:
             data = response.json()
             param.REQUEST_DATA = data
-            #tprint(PRINTSTATUS.INFO, "Data fetched successfully")
+            response.close()
             return data
 
         else:
@@ -127,38 +126,46 @@ def fetch_data():
 def post_data(data):
     """Post data to server."""
     
-    url = "{API_URL}/eews"
+    url = f"{API_URL}/eews/post"
     json_headers = {"Content-Type": "application/json", "Accept": "application/json"}
     
     try:
         response = requests.post(url, json=data, headers=json_headers)
         response.close()
-        
-        if response.status_code == 200:
-            #tprint(PRINTSTATUS.INFO, "Data posted successfully")
-            return response.json()
-        else:
-            #eprint(PRINTSTATUS.ERROR, f"Data post failed with PRINTSTATUS: {response.status_code}")
-            return None
+        return True
             
     except Exception as e:
         eprint(PRINTSTATUS.ERROR, f"Post error: {e}")
         return None
         
-def payload(data):
-    x_axis, y_axis, z_axis, g_force = data
+def payload(data=None):
+    """Build payload. If no data, send zeros."""
     
-    payload = {
-        "device_id": param.DEVICE_ID,
-        "auth_seed": param.AUTH_SEED,
-        "x_axis": x_axis,
-        "y_axis": y_axis,
-        "z_axis": z_axis,
-        "g_force": g_force,
-        "device_timestamp": time.time()
-    }
-    
-    return payload
+    try:
+        if data:
+            x_axis = data["x_axis"]
+            y_axis = data["y_axis"]
+            z_axis = data["z_axis"]
+            g_force = data["g_force"]
+        else:
+            x_axis = y_axis = z_axis = 0.0
+            g_force = 0.0
+
+        payload = {
+            "device_id": param.DEVICE_ID,
+            "auth_seed": param.AUTH_SEED,
+            "x_axis": x_axis,
+            "y_axis": y_axis,
+            "z_axis": z_axis,
+            "g_force": g_force,
+            "device_timestamp": time.time()
+        }
+
+        return payload
+
+    except Exception as e:
+        eprint(PRINTSTATUS.ERROR, f"Payload build failed: {e}")
+        return None
 
 
 ## procedural functions
@@ -222,8 +229,10 @@ def main():
             counter = 0
             
             if last_state_print != "earthquake":
-                tprint(PRINTSTATUS.INFO, "Earthquake detected!")
                 last_state_print = "earthquake"
+                tprint(PRINTSTATUS.INFO, "Earthquake detected!")
+                param.PAYLOAD = payload(data)
+                post_data(param.PAYLOAD)
 
         if stable_counter * param.SAMPLE_INTERVAL >= param.STABLE_TIME and earthquake_active:
             earthquake_active = False
@@ -231,17 +240,18 @@ def main():
             counter = 0
             
             if last_state_print != "normal":
-                tprint(PRINTSTATUS.INFO, "No earthquake detected")
                 last_state_print = "normal"
+                tprint(PRINTSTATUS.INFO, "No earthquake detected")
+                param.PAYLOAD = payload(None)
+                post_data(param.PAYLOAD)
+                fetch_data()
 
         if earthquake_active and data:
             counter += 1
             
             param.PAYLOAD = payload(data)
             post_data(param.PAYLOAD)
-            
             tprint(PRINTSTATUS.INFO, f"Magnitude: {data['g_force']:.3f} g")
-            
             time.sleep(param.SAMPLE_INTERVAL)
             continue
 
@@ -250,21 +260,24 @@ def main():
                 last_state_print = "sleep"
                 counter = 0
                 
-                param.PAYLOAD = payload(data)
+                param.PAYLOAD = payload(None)
                 post_data(param.PAYLOAD)
-                
                 tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
-            
+                
             fetch_data()
             time.sleep(param.SLEEP_INTERVAL)
             continue
 
-        if not earthquake_active and last_state_print != "normal":
-            last_state_print = "normal"
-            counter = 0
+        if not earthquake_active and not 0 == 1:
+            if last_state_print != "normal":
+                last_state_print = "normal"
+                counter = 0
+                
+                param.PAYLOAD = payload(None)
+                post_data(param.PAYLOAD)
+                tprint(PRINTSTATUS.INFO, "No earthquake detected")
+                fetch_data()
+                
+            time.sleep(param.NORMAL_INTERVAL)
+            continue
             
-            tprint(PRINTSTATUS.INFO, "No earthquake detected")
-
-        fetch_data()
-        time.sleep(param.NORMAL_INTERVAL)
-    
