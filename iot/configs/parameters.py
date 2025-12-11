@@ -2,6 +2,11 @@
 
 ## parameters
 DEVICE_ID = "R1-001"                        # unique device identifier
+AUTH_SEED = "12345678"                      # authentication seed
+
+# payloads
+PAYLOAD = None                              # data to sent
+REQUEST_DATA = None                         # received data
 
 ## loops
 COUNTER = 0                                 # loop counter

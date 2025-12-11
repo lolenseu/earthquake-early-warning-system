@@ -10,6 +10,8 @@ import utime as time
 import urequests as requests
 
 
+import main
+
 from configs.config import *
 from configs.network_config import *
 
@@ -51,6 +53,7 @@ def log_to_file(log_type: str, message: str) -> None:
         else:
             with open(filename, "a") as f:
                 f.write(message + "\n")
+                
     except:
         pass
     
@@ -74,6 +77,7 @@ def eprint(printstatus: str, message: str) -> None:
     full_message = f"[{timestamp}] - [{printstatus}]: {message}."
     
     log_to_file("error", full_message)
+    return None
 
 
 ## procedural functions
@@ -154,7 +158,7 @@ def start_wifi() -> bool:
     machine.reset()
     return False
 
-def sync_time():
+def sync_time() -> None:
     """Sync device time using NTP."""
     
     tprint(PRINTSTATUS.INFO, "Syncing time via NTP...")
@@ -189,7 +193,6 @@ def fech_old_version_info() -> tuple[str | None, str | None]:
         eprint(PRINTSTATUS.ERROR, error_msg)
         return None, None
 
-
 def fech_version_info() -> tuple[str | None, str | None]:
     """Fetch remote version info and return (PRINTSTATUS, version)."""
     
@@ -215,7 +218,6 @@ def fech_version_info() -> tuple[str | None, str | None]:
         tprint(PRINTSTATUS.ERROR, error_msg)
         eprint(PRINTSTATUS.ERROR, error_msg)
         return None, None
-
 
 def check_for_updates() -> bool:
     """Check for firmware updates and apply if available."""
@@ -264,40 +266,49 @@ def check_for_updates() -> bool:
         tprint(PRINTSTATUS.ERROR, error_msg)
         eprint(PRINTSTATUS.ERROR, error_msg)
         return False
+    
+def fail_safe():
+    time.sleep(10000)
+    # buzzer
+    
 
-
-## main startup loop
-def startup() -> None:
+## main process loop
+def process() -> None:
     """Boot process: WiFi, updates, run main.py with retry on error."""
     
-    try:
-        reset_logs()
-        startup_logo()
-        tprint(PRINTSTATUS.INFO, "Starting up...")
-        
-        start_wifi()
-        sync_time()
-        check_for_updates()
-        
-        import main
-        if __name__ == "__main__":
-            tprint(PRINTSTATUS.INFO, "Running main.py...")
-            main.main()
+    reset_logs()
+    fail_safe_counter = 0
+    
+    while True:
+        try:
+            startup_logo()
+            tprint(PRINTSTATUS.INFO, "Starting up...")
             
-        time.sleep(10)
-        machine.reset()
-        
-    except Exception as e:
-        error_msg = f"Startup error: {e}"
-        tprint(PRINTSTATUS.ERROR, error_msg)
-        eprint(PRINTSTATUS.ERROR, error_msg)
-        tprint(PRINTSTATUS.WARN, "Retrying in 10 seconds...")
-        eprint(PRINTSTATUS.WARN, "Retrying in 10 seconds...")
-        
-        time.sleep(10)
-        machine.reset()
+            start_wifi()
+            sync_time()
+            check_for_updates()
+            
+            if fail_safe_counter >= 10:
+                tprint(PRINTSTATUS.WARN, "Fail-safe triggered!")
+                fail_safe()
+            
+            else:
+                tprint(PRINTSTATUS.INFO, "Running main.py...")
+                main.main()
+                     
+            fail_safe_counter += 1
+            
+        except Exception as e:
+            error_msg = f"Startup error: {e}"
+            tprint(PRINTSTATUS.ERROR, error_msg)
+            eprint(PRINTSTATUS.ERROR, error_msg)
+            tprint(PRINTSTATUS.WARN, "Retrying in 10 seconds...")
+            eprint(PRINTSTATUS.WARN, "Retrying in 10 seconds...")
+            
+            time.sleep(10)
+            machine.reset()
             
 
 if __name__ == "__main__":
-    startup()
+    process()
     

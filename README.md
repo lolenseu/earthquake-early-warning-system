@@ -101,6 +101,7 @@ Authorization: Bearer <TOKEN>
 
 {
   "device_id": "R1-001",
+  "auth_seed": "12345678",
   "ax": 0.02,
   "ay": -0.01,
   "az": 1.03,

@@ -53,10 +53,10 @@ class MPU6050:
         """Return accelerometer values in g's (ax, ay, az)."""
         
         try:
-            ax = self.read_raw(0x3B) / 16384.0
-            ay = self.read_raw(0x3D) / 16384.0
-            az = self.read_raw(0x3F) / 16384.0
-            return ax, ay, az
+            x_axis = self.read_raw(0x3B) / 16384.0
+            y_axis = self.read_raw(0x3D) / 16384.0
+            y_axis = self.read_raw(0x3F) / 16384.0
+            return x_axis, y_axis, y_axis
         
         except Exception as e:
             eprint(PRINTSTATUS.ERROR, f"Read accel failed: {e}")
@@ -67,31 +67,30 @@ class MPU6050:
 def smooth_read(mpu, samples):
     total_ax = total_ay = total_az = 0
     for _ in range(samples):
-        ax, ay, az = mpu.read_accel()
-        total_ax += ax
-        total_ay += ay
-        total_az += az
+        x_axis, y_axis, z_axis = mpu.read_accel()
+        total_x_axis += x_axis
+        total_y_axis += y_axis
+        total_z_axis += z_axis
         
     return total_ax / samples, total_ay / samples, total_az / samples
     
-def magnitude(ax, ay, az):
-    """Compute magnitude from ax, ay, az."""
+def magnitude(x_axis, y_axis, z_axis):
+    """Compute magnitude from x_axis, y_axis, z_axis."""
     
-    return (ax**2 + ay**2 + az**2) ** 0.5
+    return (x_axis**2 + y_axis**2 + z_axis**2) ** 0.5
     
 def detect_earthquake(mpu):
     """Reads accelerometer, computes G-force, and returns dict."""
     
     try:
-        ax, ay, az = smooth_read(mpu, param.SMOOTH_READ_SAMPLING)
-        total_g = magnitude(ax, ay, az)
+        x_axis, y_axis, z_axis = smooth_read(mpu, param.SMOOTH_READ_SAMPLING)
+        total_g = magnitude(x_axis, y_axis, z_axis)
 
         data = {
-            "ax": ax,
-            "ay": ay,
-            "az": az,
-            "g_force": total_g,
-            "timestamp": time.time()
+            "x_axis": x_axis,
+            "y_axis": y_axis,
+            "z_axis": z_axis,
+            "g_force": total_g
         }
 
         if total_g >= param.EARTHQUAKE_THRESHOLD:
@@ -102,22 +101,64 @@ def detect_earthquake(mpu):
         eprint(PRINTSTATUS.ERROR, f"Detect earthquake failed: {e}")
         return None
     
+def fetch_data():
+    """Fetch dats from sever."""
+    
+    url = "{API_URL}/eews/fetch"
+    json_headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    
+    try:   
+        response = requests.get(url, headers=json_headers)
+        response.close()
+        
+        if response.status_code == 200:
+            data = response.json()
+            param.REQUEST_DATA = data
+            #tprint(PRINTSTATUS.INFO, "Data fetched successfully")
+            return data
+
+        else:
+            return None
+         
+    except Exception as e:
+        eprint(PRINTSTATUS.ERROR, f"Fetch error: {e}")
+        return None
+        
 def post_data(data):
-    """Post accelerometer data to server."""
+    """Post data to server."""
+    
+    url = "{API_URL}/eews"
+    json_headers = {"Content-Type": "application/json", "Accept": "application/json"}
     
     try:
-        url = "{API_URL}/"
-        response = requests.post(url, json=data, headers=headers)
+        response = requests.post(url, json=data, headers=json_headers)
+        response.close()
         
         if response.status_code == 200:
             #tprint(PRINTSTATUS.INFO, "Data posted successfully")
-            pass
+            return response.json()
         else:
             #eprint(PRINTSTATUS.ERROR, f"Data post failed with PRINTSTATUS: {response.status_code}")
-            pass
+            return None
             
     except Exception as e:
         eprint(PRINTSTATUS.ERROR, f"Post error: {e}")
+        return None
+        
+def payload(data):
+    x_axis, y_axis, z_axis, g_force = data
+    
+    payload = {
+        "device_id": param.DEVICE_ID,
+        "auth_seed": param.AUTH_SEED,
+        "x_axis": x_axis,
+        "y_axis": y_axis,
+        "z_axis": z_axis,
+        "g_force": g_force,
+        "device_timestamp": time.time()
+    }
+    
+    return payload
 
 
 ## procedural functions
@@ -146,11 +187,12 @@ def init_mpu6050():
 
 ## main function  
 def main():
-        
+    
     tprint(PRINTSTATUS.INFO, "Initializing Hardware...")
     mpu = init_mpu6050()
+    
     if mpu is None:
-        tprint(PRINTSTATUS.ERROR, "MPU6050 initialization failed")
+        tprint(PRINTSTATUS.ERROR, "Hardware initialization failed")
         return
     
     earthquake_active = False
@@ -194,8 +236,12 @@ def main():
 
         if earthquake_active and data:
             counter += 1
-            post_data(data)
+            
+            param.PAYLOAD = payload(data)
+            post_data(param.PAYLOAD)
+            
             tprint(PRINTSTATUS.INFO, f"Magnitude: {data['g_force']:.3f} g")
+            
             time.sleep(param.SAMPLE_INTERVAL)
             continue
 
@@ -203,15 +249,22 @@ def main():
             if last_state_print != "sleep":
                 last_state_print = "sleep"
                 counter = 0
-                tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
                 
+                param.PAYLOAD = payload(data)
+                post_data(param.PAYLOAD)
+                
+                tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
+            
+            fetch_data()
             time.sleep(param.SLEEP_INTERVAL)
             continue
 
         if not earthquake_active and last_state_print != "normal":
             last_state_print = "normal"
             counter = 0
+            
             tprint(PRINTSTATUS.INFO, "No earthquake detected")
 
+        fetch_data()
         time.sleep(param.NORMAL_INTERVAL)
     

@@ -12,6 +12,10 @@ megastream_folder: str = './megastream'
 
 mem_data_stream:dict = {}
 
+# EEWS variables
+eews_devices: dict = {}
+EEWS_STORE: dict = {}
+
 # Response Class
 class Response:
     @staticmethod
@@ -95,6 +99,10 @@ def get_server_public_ip() -> str:
         return response.json()['ip']
     except requests.RequestException:
         return 'Unable to get IP'
+
+# EEWS functions
+def eews_backend():
+    pass
 
 # Routes
 @app.route('/pipeline', methods=['GET', 'POST'])
@@ -217,6 +225,68 @@ def pipeline():
     except Exception as e:
         return Response.error('Invalid request', pipeline_id, timestamp)
         #return Response.error(f'Internal server error: {str(e)}', pipeline_id, timestamp)
+        
+# EEWS api
+@app.route('/pipeline/eews', methods=['GET', 'POST'])
+def earthquake_early_warning_system():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        device_id: str = request.args.get('device_id')
+        auth_seed: str = request.args.get('auth_seed')
+        x_axis: str = request.args.get('x_axis')
+        y_axis: str = request.args.get('y_axis')
+        z_axis: str = request.args.get('z_axis')
+        g_force: str = request.args.get('g_force')
+        device_timestamp = request.args.get('timestamp')
+        
+        if not device_id:
+            return jsonify({"status": "error", "msg": "device_id missing"}), 400
+        
+        EEWS_STORE[device_id] = {
+            "device_id": device_id,
+            "auth_seed": auth_seed,
+            "x_axis": x_axis,
+            "y_axis": y_axis,
+            "z_axis": z_axis,
+            "g_force": g_force,
+            "device_timestamp": device_timestamp,
+            "server_timestamp": timestamp
+        }
+        
+        return jsonify({
+            "status": "success",
+            "stored": EEWS_STORE[device_id]
+        }), 200 
+        
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e),"server_timestamp": timestamp}), 500
+  
+@app.route('/pipeline/eews/fetch', methods=['GET', 'POST'])
+def  earthquake_early_warning_system_fetch():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        return jsonify({
+            "status": "success",
+            "data": "test"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
+    
+@app.route('/pipeline/eews/v1/devices', methods=['GET', 'POST'])
+def earthquake_early_warning_system_devices():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        return jsonify({
+            "status": "success",
+            "devices": EEWS_STORE
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
 
 # Error Handling
 @app.errorhandler(404)
