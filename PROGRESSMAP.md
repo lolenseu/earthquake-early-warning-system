@@ -24,7 +24,8 @@
     - build the api using pair pipeline structure
     - data storage
     - request handler
-    -
+    - handle devices
+    - auto clear inactive devices
 
 3. WEB PLATFORM
 

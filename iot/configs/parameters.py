@@ -1,7 +1,7 @@
 ## parameters.py
 
 ## parameters
-DEVICE_ID = "R1-001"                        # unique device identifier
+DEVICE_ID = "ver1-r1-001"                   # unique device identifier *version - region - unit
 AUTH_SEED = "12345678"                      # authentication seed
 
 # payloads

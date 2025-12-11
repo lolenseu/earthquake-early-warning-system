@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from flask import Flask, jsonify, request
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Variables
 app = Flask(__name__)
@@ -13,8 +13,10 @@ megastream_folder: str = './megastream'
 mem_data_stream:dict = {}
 
 # EEWS variables
-eews_devices: dict = {}
+EEWS_DEVICES: dict = {}
 EEWS_STORE: dict = {}
+
+EEWS_EXPIRY_SECONDS = 30
 
 # Response Class
 class Response:
@@ -103,6 +105,19 @@ def get_server_public_ip() -> str:
 # EEWS functions
 def eews_backend():
     pass
+
+def cleanup_eews_store():
+    now = datetime.now()
+    expired_devices = []
+    for device_id, device_data in list(EEWS_STORE.items()):
+        try:
+            ts = datetime.fromisoformat(device_data["server_timestamp"])
+            if now - ts > timedelta(seconds=EEWS_EXPIRY_SECONDS):
+                expired_devices.append(device_id)
+        except:
+            expired_devices.append(device_id)
+    for device_id in expired_devices:
+        del EEWS_STORE[device_id]
 
 # Routes
 @app.route('/pipeline', methods=['GET', 'POST'])
@@ -232,6 +247,8 @@ def earthquake_early_warning_system():
     timestamp = datetime.now().isoformat()
     
     try:
+        cleanup_eews_store()
+        
         data = request.get_json()
         device_id = data.get('device_id')
         auth_seed = data.get('auth_seed')
@@ -268,6 +285,8 @@ def  earthquake_early_warning_system_fetch():
     timestamp = datetime.now().isoformat()
     
     try:
+        cleanup_eews_store()
+        
         return jsonify({
             "status": "success",
             "data": "test"
@@ -281,6 +300,8 @@ def earthquake_early_warning_system_devices():
     timestamp = datetime.now().isoformat()
     
     try:
+        cleanup_eews_store()
+        
         return jsonify({
             "status": "success",
             "devices": EEWS_STORE
