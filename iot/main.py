@@ -229,10 +229,8 @@ def main():
             counter = 0
             
             if last_state_print != "earthquake":
-                last_state_print = "earthquake"
                 tprint(PRINTSTATUS.INFO, "Earthquake detected!")
-                param.PAYLOAD = payload(data)
-                post_data(param.PAYLOAD)
+                last_state_print = "earthquake"
 
         if stable_counter * param.SAMPLE_INTERVAL >= param.STABLE_TIME and earthquake_active:
             earthquake_active = False
@@ -240,18 +238,17 @@ def main():
             counter = 0
             
             if last_state_print != "normal":
-                last_state_print = "normal"
                 tprint(PRINTSTATUS.INFO, "No earthquake detected")
-                param.PAYLOAD = payload(None)
-                post_data(param.PAYLOAD)
-                fetch_data()
+                last_state_print = "normal"
 
         if earthquake_active and data:
             counter += 1
             
             param.PAYLOAD = payload(data)
             post_data(param.PAYLOAD)
+            
             tprint(PRINTSTATUS.INFO, f"Magnitude: {data['g_force']:.3f} g")
+            
             time.sleep(param.SAMPLE_INTERVAL)
             continue
 
@@ -262,22 +259,22 @@ def main():
                 
                 param.PAYLOAD = payload(None)
                 post_data(param.PAYLOAD)
+                
                 tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
                 
             fetch_data()
             time.sleep(param.SLEEP_INTERVAL)
             continue
 
-        if not earthquake_active and not 0 == 1:
-            if last_state_print != "normal":
-                last_state_print = "normal"
-                counter = 0
-                
-                param.PAYLOAD = payload(None)
-                post_data(param.PAYLOAD)
-                tprint(PRINTSTATUS.INFO, "No earthquake detected")
-                fetch_data()
-                
-            time.sleep(param.NORMAL_INTERVAL)
-            continue
+        if not earthquake_active:
+            param.PAYLOAD = payload(None)
+            post_data(param.PAYLOAD)
+            fetch_data()
             
+            if last_state_print != "normal":
+                tprint(PRINTSTATUS.INFO, "No earthquake detected")
+                last_state_print = "normal"
+
+        time.sleep(param.NORMAL_INTERVAL)
+
+        
