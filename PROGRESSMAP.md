@@ -9,6 +9,7 @@
     - time sync
     - auto update feature
     - handle main fuction
+    -
 
 - main function main.py
     - hardware initiation
@@ -19,16 +20,20 @@
     - main logic
     - payload to send
     - fetching data fron server
+    -
 
 2. API
+    - deploying to vercel platform
     - build the api using pair pipeline structure
     - data storage
     - request handler
     - handle devices
     - auto clear inactive devices
+    - 
 
 3. WEB PLATFORM
-
-
+    - deploying to vercel platform
+    -
 
 4. APP
+    -
