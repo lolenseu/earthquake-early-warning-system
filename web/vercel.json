@@ -1,7 +1,4 @@
 {
-  "builds": [
-    { "src": "layout.html", "use": "@vercel/static" }
-  ],
   "routes": [
     { "src": "/(.*)", "dest": "/layout.html" }
   ]
