@@ -154,6 +154,8 @@ def payload(data=None):
         payload = {
             "device_id": param.DEVICE_ID,
             "auth_seed": param.AUTH_SEED,
+            "latitude": param.LATITUDE,
+            "longtitude": param.LONGITUDE,
             "x_axis": x_axis,
             "y_axis": y_axis,
             "z_axis": z_axis,

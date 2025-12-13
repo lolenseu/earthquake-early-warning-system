@@ -1,8 +1,11 @@
 // Dashboard data simulation
-let totalDevices = 156;
-let onlineDevices = 142;
-let apiLatency = 45;
-let currentWarnings = 3;
+let totalDevices = 0;  // Will be updated from API
+let onlineDevices = 0; // Will be updated from API
+let apiLatency = 0;    // Will be updated from ping
+let currentWarnings = 0; // Will be updated from API
+
+// API Configuration
+const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
 
 // Sample data from API format - Replace URL with actual API endpoint
 // API URL: https://your-api-endpoint.com/api/devices/data
@@ -109,6 +112,65 @@ const sampleApiData = [
     { "device_id": "R1-005", "auth_seed": "55667788", "ax": 0.01, "ay": 0.01, "az": 1.02, "total_g": 1.29, "timestamp": 1700000240 }
 ];
 
+// Fetch functions for live data
+async function fetchTotalDevices() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/devices_list`);
+        const data = await response.json();
+        if (data.status === 'success' && data.devices) {
+            return data.total_devices || data.devices.length;
+        }
+    } catch (error) {
+        console.error('Error fetching total devices:', error);
+    }
+    return 0;
+}
+
+async function fetchOnlineDevices() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/devices`);
+        const data = await response.json();
+        if (data.status === 'success' && data.devices) {
+            return Object.keys(data.devices).length;
+        }
+    } catch (error) {
+        console.error('Error fetching online devices:', error);
+    }
+    return 0;
+}
+
+async function fetchDeviceWarnings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/devices`);
+        const data = await response.json();
+        if (data.status === 'success' && data.devices) {
+            let warningCount = 0;
+            Object.values(data.devices).forEach(device => {
+                // Consider g_force as warning level (higher g_force = higher warning)
+                if (device.g_force && device.g_force > 1.0) {
+                    warningCount++;
+                }
+            });
+            return warningCount;
+        }
+    } catch (error) {
+        console.error('Error fetching device warnings:', error);
+    }
+    return 0;
+}
+
+async function pingAPI() {
+    const startTime = performance.now();
+    try {
+        const response = await fetch(`${API_BASE_URL}/devices`, { method: 'HEAD' });
+        const endTime = performance.now();
+        return Math.round(endTime - startTime);
+    } catch (error) {
+        console.error('Error pinging API:', error);
+        return 0;
+    }
+}
+
 // Initialize dashboard function - called when dashboard content is loaded
 function initDashboard() {
     console.log('Initializing dashboard...');
@@ -203,41 +265,80 @@ function initDashboard() {
         });
     }
 
-    // Simulate real-time data updates
-    function simulateDataUpdates() {
-        // Randomize values slightly
-        onlineDevices = Math.max(100, Math.min(160, onlineDevices + Math.floor(Math.random() * 3) - 1));
-        apiLatency = Math.max(20, Math.min(100, apiLatency + Math.floor(Math.random() * 10) - 5));
-        currentWarnings = Math.max(0, Math.min(10, currentWarnings + Math.floor(Math.random() * 3) - 1));
+    // Update live data from API
+    async function updateLiveData() {
+        try {
+            // Fetch all data concurrently for better performance
+            const [total, online, warnings, latency] = await Promise.all([
+                fetchTotalDevices(),
+                fetchOnlineDevices(),
+                fetchDeviceWarnings(),
+                pingAPI()
+            ]);
+            
+            totalDevices = total;
+            onlineDevices = online;
+            currentWarnings = warnings;
+            apiLatency = latency;
+            
+            updateStats();
+            
+            console.log('Live data updated:', {
+                totalDevices,
+                onlineDevices,
+                apiLatency,
+                currentWarnings
+            });
+        } catch (error) {
+            console.error('Error updating live data:', error);
+        }
+    }
+
+    // Full dashboard refresh - updates everything every 2 seconds
+    async function refreshDashboard() {
+        console.log('Refreshing dashboard...');
         
-        updateStats();
-        
-        // Update chart data (only for day view to keep it simple)
-        if (currentDataRange === 'day') {
-            const now = new Date();
-            const timeLabel = now.getHours().toString().padStart(2, '0') + ':' + 
-                             now.getMinutes().toString().padStart(2, '0');
+        try {
+            // Fetch all live data
+            const [total, online, warnings, latency] = await Promise.all([
+                fetchTotalDevices(),
+                fetchOnlineDevices(),
+                fetchDeviceWarnings(),
+                pingAPI()
+            ]);
             
-            chartData.datasets[0].data.push(onlineDevices);
-            chartData.datasets[1].data.push(apiLatency);
-            chartData.datasets[2].data.push(currentWarnings);
+            // Update all values
+            totalDevices = total;
+            onlineDevices = online;
+            currentWarnings = warnings;
+            apiLatency = latency;
             
-            // Remove oldest data point to keep chart clean
-            if (chartData.labels.length > 10) {
-                chartData.labels.shift();
-                chartData.datasets.forEach(dataset => dataset.data.shift());
-            }
+            // Update all card values
+            updateStats();
             
-            chartData.labels.push(timeLabel);
+            // Update chart with new data if needed
+            // (For now, keep using sample data for charts)
             metricsChart.update();
+            
+            console.log('Dashboard refreshed:', {
+                totalDevices,
+                onlineDevices,
+                apiLatency,
+                currentWarnings
+            });
+        } catch (error) {
+            console.error('Error refreshing dashboard:', error);
         }
     }
 
     // Initialize dashboard
     updateStats();
+    
+    // Initial live data fetch
+    updateLiveData();
 
-    // Update data every 3 seconds
-    setInterval(simulateDataUpdates, 3000);
+    // Refresh entire dashboard every 2 seconds
+    setInterval(refreshDashboard, 2000);
 }
 
 // Auto-initialize dashboard if we're already on the dashboard page

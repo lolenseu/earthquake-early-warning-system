@@ -15,6 +15,7 @@ mem_data_stream:dict = {}
 # EEWS variables
 EEWS_DEVICES: dict = {}
 EEWS_STORE: dict = {}
+EEWS_DEVICES_ID: set = set()
 
 EEWS_EXPIRY_SECONDS = 30
 
@@ -118,6 +119,12 @@ def cleanup_eews_store():
             expired_devices.append(device_id)
     for device_id in expired_devices:
         del EEWS_STORE[device_id]
+        
+def add_eews_device(device_id: str):
+    if device_id not in EEWS_DEVICES_ID:
+        EEWS_DEVICES_ID.add(device_id)
+        return True
+    return False
 
 # Routes
 @app.route('/pipeline', methods=['GET', 'POST'])
@@ -261,6 +268,8 @@ def earthquake_early_warning_system():
         if not device_id:
             return jsonify({"status": "error", "msg": "device_id missing"}), 400
         
+        add_eews_device(device_id)
+        
         EEWS_STORE[device_id] = {
             "device_id": device_id,
             "auth_seed": auth_seed,
@@ -305,6 +314,24 @@ def earthquake_early_warning_system_devices():
         return jsonify({
             "status": "success",
             "devices": EEWS_STORE
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
+    
+@app.route('/pipeline/eews/v1/devices_list', methods=['GET', 'POST'])
+def earthquake_early_warning_system_devices_list():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        cleanup_eews_store()
+        
+        devices_list = list(EEWS_DEVICES_ID)
+        
+        return jsonify({
+            "status": "success",
+            "total_devices": len(devices_list),
+            "devices": devices_list
         }), 200
 
     except Exception as e:
