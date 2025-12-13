@@ -33,7 +33,10 @@
 
 3. WEB PLATFORM
     - deploying to vercel platform
-    -
+    - side menu bar
+    - dashboard
+    - design of the cards
+    - desing of the graph
 
 4. APP
     -

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+<body>
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h1>Dashboard</h1>
+            <div class="last-updated">Last updated: <span id="lastUpdated"></span></div>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card total-devices-card">
+                <div class="card-content">
+                    <div class="card-left">
+                        <span class="material-icons stat-icon">settings</span>
+                    </div>
+                    <div class="card-right">
+                        <div class="stat-title">Total IoT Devices</div>
+                        <div class="stat-value" id="totalDevices">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card online-devices-card">
+                <div class="card-content">
+                    <div class="card-left">
+                        <span class="material-icons stat-icon">router</span>
+                    </div>
+                    <div class="card-right">
+                        <div class="stat-title">Online IoT Devices</div>
+                        <div class="stat-value" id="onlineDevices">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card api-latency-card">
+                <div class="card-content">
+                    <div class="card-left">
+                        <span class="material-icons stat-icon">speed</span>
+                    </div>
+                    <div class="card-right">
+                        <div class="stat-title">API Latency</div>
+                        <div class="stat-value" id="apiLatency">0 ms</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card current-warnings-card">
+                <div class="card-content">
+                    <div class="card-left">
+                        <span class="material-icons stat-icon">warning</span>
+                    </div>
+                    <div class="card-right">
+                        <div class="stat-title">Current Warnings</div>
+                        <div class="stat-value" id="currentWarnings">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart Section -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <div class="chart-title">System Metrics</div>
+                <div class="chart-controls">
+                    <button class="active" data-type="line">Line Chart</button>
+                    <button data-type="bar">Bar Chart</button>
+                </div>
+                <div class="date-range-controls">
+                    <select class="date-range-select" id="dateRangeSelect">
+                        <option value="day">1 Day</option>
+                        <option value="week">1 Week</option>
+                        <option value="month">1 Month</option>
+                    </select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="metricsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

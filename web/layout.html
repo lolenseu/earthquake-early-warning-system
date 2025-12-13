@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Earthquake Early Warning System</title>
 
-    <!-- CSS & Google Fonts/Icons -->
+    <!-- CSS -->
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <!-- Google Fonts/Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
@@ -14,12 +17,12 @@
     <div class="layout-container" id="layoutContainer">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="logo">
-                    <h3>EEWS Monitor</h3>
-                </div>
                 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
                     <span class="material-icons">menu</span>
                 </button>
+                <div class="logo">
+                    <h3>EEWS Monitor</h3>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -27,16 +30,12 @@
                         <span class="material-icons">dashboard</span>
                         <span>Dashboard</span>
                     </li>
-                    <li class="nav-item" data-page="pages/graphs.html">
-                        <span class="material-icons">insights</span>
-                        <span>Graphs</span>
-                    </li>
                     <li class="nav-item" data-page="pages/map.html">
                         <span class="material-icons">map</span>
                         <span>MAP</span>
                     </li>
                     <li class="nav-item" data-page="pages/devices.html">
-                        <span class="material-icons">device_hub</span>
+                        <span class="material-icons">router</span>
                         <span>Devices</span>
                     </li>
                     <li class="nav-item" data-page="pages/api.html">
@@ -53,5 +52,7 @@
     </div>
 
     <script src="js/script.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
