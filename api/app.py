@@ -7,6 +7,14 @@ from datetime import datetime, timedelta
 # Variables
 app = Flask(__name__)
 
+# CORS
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,Cache-Control')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
 parent_folder: str = './pipeline'
 megastream_folder: str = './megastream'
 
@@ -15,7 +23,8 @@ mem_data_stream:dict = {}
 # EEWS variables
 EEWS_DEVICES: dict = {}
 EEWS_STORE: dict = {}
-EEWS_DEVICES_ID: set = set()
+
+EEWS_DEVICES_FILE = './eews_devices.json'
 
 EEWS_EXPIRY_SECONDS = 30
 
@@ -120,10 +129,43 @@ def cleanup_eews_store():
     for device_id in expired_devices:
         del EEWS_STORE[device_id]
         
-def add_eews_device(device_id: str):
-    if device_id not in EEWS_DEVICES_ID:
-        EEWS_DEVICES_ID.add(device_id)
+def load_eews_devices():
+    """Load EEWS device IDs from local file"""
+    if os.path.exists(EEWS_DEVICES_FILE):
+        try:
+            with open(EEWS_DEVICES_FILE, 'r') as f:
+                data = json.load(f)
+                return set(data.get('devices', []))
+        except:
+            return set()
+    return set()
+
+def save_eews_devices(devices_set):
+    """Save EEWS device IDs to local file"""
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(EEWS_DEVICES_FILE), exist_ok=True)
+        
+        with open(EEWS_DEVICES_FILE, 'w') as f:
+            json.dump({'devices': list(devices_set), 'timestamp': datetime.now().isoformat()}, f)
         return True
+    except:
+        return False
+
+def add_eews_device(device_id: str):
+    """Add new device to EEWS devices list if not already present"""
+    # Load current devices
+    devices = load_eews_devices()
+    
+    # Add new device if not present
+    if device_id not in devices:
+        devices.add(device_id)
+        
+        # Save updated list
+        if save_eews_devices(devices):
+            print(f"New EEWS device registered: {device_id}")
+            return True
+    
     return False
 
 # Routes
@@ -326,12 +368,13 @@ def earthquake_early_warning_system_devices_list():
     try:
         cleanup_eews_store()
         
-        devices_list = list(EEWS_DEVICES_ID)
+        devices_list = list(load_eews_devices())
         
         return jsonify({
             "status": "success",
             "total_devices": len(devices_list),
-            "devices": devices_list
+            "devices": devices_list,
+            "server_timestamp": timestamp
         }), 200
 
     except Exception as e:

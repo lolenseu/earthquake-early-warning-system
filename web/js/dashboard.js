@@ -5,12 +5,8 @@ let apiLatency = 0;    // Will be updated from ping
 let currentWarnings = 0; // Will be updated from API
 
 // API Configuration
+//const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
 const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
-
-// Sample data from API format - Replace URL with actual API endpoint
-// API URL: https://your-api-endpoint.com/api/devices/data
-// Sample data format:
-// { "device_id": "R1-001", "auth_seed": "12345678", "ax": 0.02, "ay": -0.01, "az": 1.03, "total_g": 1.31, "timestamp": 1700000000 }
 
 // Sample data for different time ranges
 const sampleData = {
@@ -103,68 +99,116 @@ const sampleData = {
     }
 };
 
-// Sample API data points for demonstration
-const sampleApiData = [
-    { "device_id": "R1-001", "auth_seed": "12345678", "ax": 0.02, "ay": -0.01, "az": 1.03, "total_g": 1.31, "timestamp": 1700000000 },
-    { "device_id": "R1-002", "auth_seed": "87654321", "ax": 0.01, "ay": 0.05, "az": 1.01, "total_g": 1.28, "timestamp": 1700000060 },
-    { "device_id": "R1-003", "auth_seed": "11223344", "ax": -0.03, "ay": 0.02, "az": 0.99, "total_g": 1.25, "timestamp": 1700000120 },
-    { "device_id": "R1-004", "auth_seed": "44332211", "ax": 0.04, "ay": -0.02, "az": 1.04, "total_g": 1.33, "timestamp": 1700000180 },
-    { "device_id": "R1-005", "auth_seed": "55667788", "ax": 0.01, "ay": 0.01, "az": 1.02, "total_g": 1.29, "timestamp": 1700000240 }
-];
-
 // Fetch functions for live data
 async function fetchTotalDevices() {
     try {
-        const response = await fetch(`${API_BASE_URL}/devices_list`);
+        console.log('Fetching total devices...');
+        const response = await fetch(`${API_BASE_URL}/devices_list`, {
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('Total devices response:', data);
+        
         if (data.status === 'success' && data.devices) {
-            return data.total_devices || data.devices.length;
+            const count = data.total_devices || data.devices.length;
+            console.log('Total devices count:', count);
+            return count;
         }
     } catch (error) {
         console.error('Error fetching total devices:', error);
+        return 0;
     }
-    return 0;
 }
 
 async function fetchOnlineDevices() {
     try {
-        const response = await fetch(`${API_BASE_URL}/devices`);
+        console.log('Fetching online devices...');
+        const response = await fetch(`${API_BASE_URL}/devices`, {
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('Online devices response:', data);
+        
         if (data.status === 'success' && data.devices) {
-            return Object.keys(data.devices).length;
+            const count = Object.keys(data.devices).length;
+            console.log('Online devices count:', count);
+            return count;
         }
     } catch (error) {
         console.error('Error fetching online devices:', error);
+        return 0;
     }
-    return 0;
 }
 
 async function fetchDeviceWarnings() {
     try {
-        const response = await fetch(`${API_BASE_URL}/devices`);
+        console.log('Fetching device warnings...');
+        const response = await fetch(`${API_BASE_URL}/devices`, {
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('Device warnings response:', data);
+        
         if (data.status === 'success' && data.devices) {
             let warningCount = 0;
             Object.values(data.devices).forEach(device => {
-                // Consider g_force as warning level (higher g_force = higher warning)
-                if (device.g_force && device.g_force > 1.0) {
+                // Consider g_force as warning level (lower threshold for better sensitivity)
+                if (device.g_force && device.g_force > 0.5) {
                     warningCount++;
                 }
             });
+            console.log('Warning count:', warningCount);
             return warningCount;
         }
     } catch (error) {
         console.error('Error fetching device warnings:', error);
+        return 0;
     }
-    return 0;
 }
 
 async function pingAPI() {
     const startTime = performance.now();
     try {
-        const response = await fetch(`${API_BASE_URL}/devices`, { method: 'HEAD' });
+        console.log('Pinging API...');
+        const response = await fetch(`${API_BASE_URL}/devices`, { 
+            method: 'HEAD',
+            mode: 'cors',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
         const endTime = performance.now();
-        return Math.round(endTime - startTime);
+        const latency = Math.round(endTime - startTime);
+        console.log('API latency:', latency, 'ms');
+        return latency;
     } catch (error) {
         console.error('Error pinging API:', error);
         return 0;
@@ -268,6 +312,8 @@ function initDashboard() {
     // Update live data from API
     async function updateLiveData() {
         try {
+            console.log('Fetching live data...');
+            
             // Fetch all data concurrently for better performance
             const [total, online, warnings, latency] = await Promise.all([
                 fetchTotalDevices(),
@@ -294,7 +340,7 @@ function initDashboard() {
         }
     }
 
-    // Full dashboard refresh - updates everything every 2 seconds
+    // Full dashboard refresh - updates everything every 1 second
     async function refreshDashboard() {
         console.log('Refreshing dashboard...');
         
@@ -337,11 +383,18 @@ function initDashboard() {
     // Initial live data fetch
     updateLiveData();
 
-    // Refresh entire dashboard every 2 seconds
-    setInterval(refreshDashboard, 2000);
+    // Refresh entire dashboard every 1 second
+    setInterval(refreshDashboard, 1000);
 }
 
 // Auto-initialize dashboard if we're already on the dashboard page
 if (window.location.href.includes('dashboard')) {
-    setTimeout(initDashboard, 500);
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initDashboard, 500);
+        });
+    } else {
+        setTimeout(initDashboard, 500);
+    }
 }
