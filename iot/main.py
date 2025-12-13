@@ -151,17 +151,29 @@ def payload(data=None):
             x_axis = y_axis = z_axis = 0.0
             g_force = 0.0
 
-        payload = {
-            "device_id": param.DEVICE_ID,
-            "auth_seed": param.AUTH_SEED,
-            "latitude": param.LATITUDE,
-            "longtitude": param.LONGITUDE,
-            "x_axis": x_axis,
-            "y_axis": y_axis,
-            "z_axis": z_axis,
-            "g_force": g_force,
-            "device_timestamp": time.time()
-        }
+        payload = {}
+        
+        # Conditionally add fields based on parameters
+        if param.SEND_AUTH_SEED:
+            payload["auth_seed"] = param.AUTH_SEED
+            
+        if param.SEND_LOCATION:
+            payload["latitude"] = param.LATITUDE
+            payload["longitude"] = param.LONGITUDE
+            
+        if param.SEND_AXIS:
+            payload["x_axis"] = x_axis
+            payload["y_axis"] = y_axis
+            payload["z_axis"] = z_axis
+            
+        if param.SEND_GFORCE:
+            payload["g_force"] = g_force
+            
+        if param.SEND_TIMESTAMP:
+            payload["device_timestamp"] = time.time()
+            
+        # Always include device_id
+        payload["device_id"] = param.DEVICE_ID
 
         return payload
 

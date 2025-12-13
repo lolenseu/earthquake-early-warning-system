@@ -26,7 +26,7 @@ EEWS_STORE: dict = {}
 
 EEWS_DEVICES_FILE = './eews_devices.json'
 
-EEWS_EXPIRY_SECONDS = 30
+EEWS_EXPIRY_SECONDS = 10
 
 # Response Class
 class Response:
@@ -301,6 +301,8 @@ def earthquake_early_warning_system():
         data = request.get_json()
         device_id = data.get('device_id')
         auth_seed = data.get('auth_seed')
+        latitude = data.get('latitude')
+        longtitude = data.get('latitude')
         x_axis = data.get('x_axis')
         y_axis = data.get('y_axis')
         z_axis = data.get('z_axis')
@@ -315,6 +317,8 @@ def earthquake_early_warning_system():
         EEWS_STORE[device_id] = {
             "device_id": device_id,
             "auth_seed": auth_seed,
+            "latitude": latitude,
+            "longtitude": longtitude,
             "x_axis": x_axis,
             "y_axis": y_axis,
             "z_axis": z_axis,

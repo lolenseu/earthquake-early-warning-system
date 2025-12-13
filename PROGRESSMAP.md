@@ -19,8 +19,9 @@
     - detection
     - main logic
     - payload to send
+    - payload filtering
     - fetching data fron server
-    -
+    - 
 
 2. API
     - deploying to vercel platform

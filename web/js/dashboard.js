@@ -5,8 +5,8 @@ let apiLatency = 0;    // Will be updated from ping
 let currentWarnings = 0; // Will be updated from API
 
 // API Configuration
-//const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
-const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
+const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
+//const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
 
 // Sample data for different time ranges
 const sampleData = {
@@ -102,7 +102,6 @@ const sampleData = {
 // Fetch functions for live data
 async function fetchTotalDevices() {
     try {
-        console.log('Fetching total devices...');
         const response = await fetch(`${API_BASE_URL}/devices_list`, {
             mode: 'cors',
             headers: {
@@ -116,22 +115,17 @@ async function fetchTotalDevices() {
         }
         
         const data = await response.json();
-        console.log('Total devices response:', data);
-        
         if (data.status === 'success' && data.devices) {
             const count = data.total_devices || data.devices.length;
-            console.log('Total devices count:', count);
             return count;
         }
     } catch (error) {
-        console.error('Error fetching total devices:', error);
         return 0;
     }
 }
 
 async function fetchOnlineDevices() {
     try {
-        console.log('Fetching online devices...');
         const response = await fetch(`${API_BASE_URL}/devices`, {
             mode: 'cors',
             headers: {
@@ -144,51 +138,12 @@ async function fetchOnlineDevices() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
-        console.log('Online devices response:', data);
-        
+        const data = await response.json();        
         if (data.status === 'success' && data.devices) {
             const count = Object.keys(data.devices).length;
-            console.log('Online devices count:', count);
             return count;
         }
     } catch (error) {
-        console.error('Error fetching online devices:', error);
-        return 0;
-    }
-}
-
-async function fetchDeviceWarnings() {
-    try {
-        console.log('Fetching device warnings...');
-        const response = await fetch(`${API_BASE_URL}/devices`, {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Device warnings response:', data);
-        
-        if (data.status === 'success' && data.devices) {
-            let warningCount = 0;
-            Object.values(data.devices).forEach(device => {
-                // Consider g_force as warning level (lower threshold for better sensitivity)
-                if (device.g_force && device.g_force > 0.5) {
-                    warningCount++;
-                }
-            });
-            console.log('Warning count:', warningCount);
-            return warningCount;
-        }
-    } catch (error) {
-        console.error('Error fetching device warnings:', error);
         return 0;
     }
 }
@@ -196,7 +151,6 @@ async function fetchDeviceWarnings() {
 async function pingAPI() {
     const startTime = performance.now();
     try {
-        console.log('Pinging API...');
         const response = await fetch(`${API_BASE_URL}/devices`, { 
             method: 'HEAD',
             mode: 'cors',
@@ -207,18 +161,43 @@ async function pingAPI() {
         
         const endTime = performance.now();
         const latency = Math.round(endTime - startTime);
-        console.log('API latency:', latency, 'ms');
         return latency;
     } catch (error) {
-        console.error('Error pinging API:', error);
+        return 0;
+    }
+}
+
+async function fetchDeviceWarnings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/devices`, {
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();        
+        if (data.status === 'success' && data.devices) {
+            let warningCount = 0;
+            Object.values(data.devices).forEach(device => {
+                if (device.g_force && device.g_force > 1.2) {
+                    warningCount++;
+                }
+            });
+            return warningCount;
+        }
+    } catch (error) {
         return 0;
     }
 }
 
 // Initialize dashboard function - called when dashboard content is loaded
 function initDashboard() {
-    console.log('Initializing dashboard...');
-    
     // Update stats cards
     function updateStats() {
         const totalDevicesEl = document.getElementById('totalDevices');
@@ -237,7 +216,6 @@ function initDashboard() {
             const now = new Date();
             lastUpdatedEl.textContent = now.toLocaleString();
         } else {
-            console.log('Dashboard elements not found yet, retrying...');
             setTimeout(updateStats, 100);
             return;
         }
@@ -246,7 +224,6 @@ function initDashboard() {
     // Chart configuration
     const metricsChartEl = document.getElementById('metricsChart');
     if (!metricsChartEl) {
-        console.log('Chart element not found, retrying...');
         setTimeout(initDashboard, 100);
         return;
     }
@@ -312,8 +289,6 @@ function initDashboard() {
     // Update live data from API
     async function updateLiveData() {
         try {
-            console.log('Fetching live data...');
-            
             // Fetch all data concurrently for better performance
             const [total, online, warnings, latency] = await Promise.all([
                 fetchTotalDevices(),
@@ -328,13 +303,6 @@ function initDashboard() {
             apiLatency = latency;
             
             updateStats();
-            
-            console.log('Live data updated:', {
-                totalDevices,
-                onlineDevices,
-                apiLatency,
-                currentWarnings
-            });
         } catch (error) {
             console.error('Error updating live data:', error);
         }
@@ -342,8 +310,6 @@ function initDashboard() {
 
     // Full dashboard refresh - updates everything every 1 second
     async function refreshDashboard() {
-        console.log('Refreshing dashboard...');
-        
         try {
             // Fetch all live data
             const [total, online, warnings, latency] = await Promise.all([
@@ -365,13 +331,6 @@ function initDashboard() {
             // Update chart with new data if needed
             // (For now, keep using sample data for charts)
             metricsChart.update();
-            
-            console.log('Dashboard refreshed:', {
-                totalDevices,
-                onlineDevices,
-                apiLatency,
-                currentWarnings
-            });
         } catch (error) {
             console.error('Error refreshing dashboard:', error);
         }
