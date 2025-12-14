@@ -199,6 +199,42 @@
     height: 400px;
 }
 
+/* Live chart specific styles */
+.live-chart-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.live-chart-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.live-chart-title {
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.live-chart {
+    position: relative;
+    height: 300px;
+}
+
+@media (max-width: 768px) {
+    .live-chart-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .live-chart {
+        height: 250px;
+    }
+}
+
 /* Responsive design */
 @media (max-width: 1200px) {
     .stats-grid {

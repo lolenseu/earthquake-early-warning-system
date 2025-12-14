@@ -8,94 +8,43 @@ let currentWarnings = 0; // Will be updated from API
 const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
 //const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
 
-// Sample data for different time ranges
-const sampleData = {
+// Live data arrays for real-time chart
+let liveData = {
+    labels: [],
+    onlineDevices: [],
+    warnings: [],
+    maxDevices: []
+};
+
+// Initialize live data with current values
+function initializeLiveData() {
+    liveData.labels = [];
+    liveData.onlineDevices = [];
+    liveData.warnings = [];
+    liveData.maxDevices = [];
+    
+    // Add initial data point
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString();
+    liveData.labels.push(timeLabel);
+    liveData.onlineDevices.push(onlineDevices);
+    liveData.warnings.push(currentWarnings);
+    liveData.maxDevices.push(totalDevices);
+}
+
+// API Data for different time ranges
+const apiData = {
     day: {
         labels: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'],
-        datasets: [
-            {
-                label: 'Online Devices',
-                data: [135, 134, 133, 132, 134, 136, 138, 140, 142, 141, 140, 139, 140, 141, 142, 141, 140, 139, 138, 137, 138, 139, 141, 142],
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4,
-                fill: true
-            },
-            {
-                label: 'API Latency (ms)',
-                data: [50, 49, 48, 47, 48, 46, 45, 44, 45, 46, 47, 48, 42, 43, 45, 44, 43, 44, 46, 47, 48, 46, 45, 45],
-                borderColor: '#764ba2',
-                backgroundColor: 'rgba(118, 75, 162, 0.1)',
-                tension: 0.4,
-                fill: true
-            },
-            {
-                label: 'Warning Level',
-                data: [2, 2, 2, 1, 1, 1, 2, 2, 2, 3, 3, 2, 1, 2, 2, 1, 1, 2, 2, 3, 3, 2, 2, 2],
-                borderColor: '#f093fb',
-                backgroundColor: 'rgba(240, 147, 251, 0.1)',
-                tension: 0.4,
-                fill: true
-            }
-        ]
+        datasets: []
     },
     week: {
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        datasets: [
-            {
-                label: 'Online Devices',
-                data: [138, 141, 139, 142, 140, 137, 142],
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4,
-                fill: true
-            },
-            {
-                label: 'API Latency (ms)',
-                data: [47, 44, 46, 43, 45, 48, 45],
-                borderColor: '#764ba2',
-                backgroundColor: 'rgba(118, 75, 162, 0.1)',
-                tension: 0.4,
-                fill: true
-            },
-            {
-                label: 'Warning Level',
-                data: [3, 2, 1, 2, 1, 2, 3],
-                borderColor: '#f093fb',
-                backgroundColor: 'rgba(240, 147, 251, 0.1)',
-                tension: 0.4,
-                fill: true
-            }
-        ]
+        datasets: []
     },
     month: {
         labels: ['Day 1', 'Day 5', 'Day 10', 'Day 15', 'Day 20', 'Day 25', 'Day 30'],
-        datasets: [
-            {
-                label: 'Online Devices',
-                data: [140, 138, 139, 141, 142, 140, 142],
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4,
-                fill: true
-            },
-            {
-                label: 'API Latency (ms)',
-                data: [45, 46, 44, 45, 43, 44, 45],
-                borderColor: '#764ba2',
-                backgroundColor: 'rgba(118, 75, 162, 0.1)',
-                tension: 0.4,
-                fill: true
-            },
-            {
-                label: 'Warning Level',
-                data: [2, 1, 2, 1, 1, 2, 1],
-                borderColor: '#f093fb',
-                backgroundColor: 'rgba(240, 147, 251, 0.1)',
-                tension: 0.4,
-                fill: true
-            }
-        ]
+        datasets: []
     }
 };
 
@@ -111,7 +60,7 @@ async function fetchTotalDevices() {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            return 0;
         }
         
         const data = await response.json();
@@ -135,13 +84,42 @@ async function fetchOnlineDevices() {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            return 0;
         }
         
         const data = await response.json();        
         if (data.status === 'success' && data.devices) {
             const count = Object.keys(data.devices).length;
             return count;
+        }
+    } catch (error) {
+        return 0;
+    }
+}
+
+async function fetchDeviceWarnings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/devices`, {
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            return 0;
+        }
+        
+        const data = await response.json();        
+        if (data.status === 'success' && data.devices) {
+            let warningCount = 0;
+            Object.values(data.devices).forEach(device => {
+                if (device.g_force && device.g_force > 1.2) {
+                    warningCount++;
+                }
+            });
+            return warningCount;
         }
     } catch (error) {
         return 0;
@@ -162,35 +140,6 @@ async function pingAPI() {
         const endTime = performance.now();
         const latency = Math.round(endTime - startTime);
         return latency;
-    } catch (error) {
-        return 0;
-    }
-}
-
-async function fetchDeviceWarnings() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/devices`, {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();        
-        if (data.status === 'success' && data.devices) {
-            let warningCount = 0;
-            Object.values(data.devices).forEach(device => {
-                if (device.g_force && device.g_force > 1.2) {
-                    warningCount++;
-                }
-            });
-            return warningCount;
-        }
     } catch (error) {
         return 0;
     }
@@ -232,9 +181,73 @@ function initDashboard() {
     let chartType = 'line';
     let currentDataRange = 'day'; // Default to day view
 
+    // Live chart configuration
+    const liveChartConfig = {
+        type: chartType,
+        data: {
+            labels: liveData.labels,
+            datasets: [
+                {
+                    label: 'Online Devices',
+                    data: liveData.onlineDevices,
+                    borderColor: '#00db5b',
+                    backgroundColor: 'rgba(0, 219, 91, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 2
+                },
+                {
+                    label: 'Earthquake Warnings',
+                    data: liveData.warnings,
+                    borderColor: '#ff416c',
+                    backgroundColor: 'rgba(255, 65, 108, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 2
+                },
+                {
+                    label: 'Total Devices (Max)',
+                    data: liveData.maxDevices,
+                    borderColor: '#4facfe',
+                    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 2,
+                    borderDash: [5, 5] // Dashed line for max devices
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 750
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: totalDevices + 5
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    };
+
     const chartConfig = {
         type: chartType,
-        data: sampleData[currentDataRange],
+        data: apiData[currentDataRange],
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -254,7 +267,7 @@ function initDashboard() {
         }
     };
 
-    const metricsChart = new Chart(ctx, chartConfig);
+    let metricsChart = new Chart(ctx, chartConfig);
 
     // Chart type switching
     const chartButtons = document.querySelectorAll('.chart-controls button');
@@ -281,13 +294,27 @@ function initDashboard() {
         dateRangeSelect.addEventListener('change', () => {
             // Update data range
             currentDataRange = dateRangeSelect.value;
-            metricsChart.data = sampleData[currentDataRange];
-            metricsChart.update();
+            
+            if (currentDataRange === 'live') {
+                // Switch to live chart
+                metricsChart.destroy();
+                metricsChart = new Chart(ctx, liveChartConfig);
+                
+                // Initialize live data if empty
+                if (liveData.labels.length === 0) {
+                    initializeLiveData();
+                }
+            } else {
+                // Switch to historical chart
+                metricsChart.destroy();
+                chartConfig.data = apiData[currentDataRange];
+                metricsChart = new Chart(ctx, chartConfig);
+            }
         });
     }
 
-    // Update live data from API
-    async function updateLiveData() {
+    // Fetch and update all live data
+    async function fetchLiveData() {
         try {
             // Fetch all data concurrently for better performance
             const [total, online, warnings, latency] = await Promise.all([
@@ -297,53 +324,98 @@ function initDashboard() {
                 pingAPI()
             ]);
             
-            totalDevices = total;
-            onlineDevices = online;
-            currentWarnings = warnings;
-            apiLatency = latency;
-            
-            updateStats();
+            return {
+                totalDevices: total,
+                onlineDevices: online,
+                warnings: warnings,
+                latency: latency
+            };
         } catch (error) {
-            console.error('Error updating live data:', error);
+            return null;
         }
     }
 
-    // Full dashboard refresh - updates everything every 1 second
-    async function refreshDashboard() {
+    // Update chart with new live data
+    function updateLiveDataChart(newData) {
+        const now = new Date();
+        const timeLabel = now.toLocaleTimeString();
+        
+        // Add new data point
+        liveData.labels.push(timeLabel);
+        liveData.onlineDevices.push(newData.onlineDevices);
+        liveData.warnings.push(newData.warnings);
+        liveData.maxDevices.push(newData.totalDevices);
+        
+        // Keep only last 20 data points
+        if (liveData.labels.length > 20) {
+            liveData.labels.shift();
+            liveData.onlineDevices.shift();
+            liveData.warnings.shift();
+            liveData.maxDevices.shift();
+        }
+        
+        // Update chart
+        metricsChart.data.labels = liveData.labels;
+        metricsChart.data.datasets[0].data = liveData.onlineDevices;
+        metricsChart.data.datasets[1].data = liveData.warnings;
+        metricsChart.data.datasets[2].data = liveData.maxDevices;
+        
+        // Update y-axis max based on current total devices
+        metricsChart.options.scales.y.suggestedMax = newData.totalDevices + 5;
+        
+        metricsChart.update();
+    }
+
+    // Live dashboard refresh - updates everything every 5 seconds
+    async function refreshLiveDashboard() {
         try {
-            // Fetch all live data
-            const [total, online, warnings, latency] = await Promise.all([
-                fetchTotalDevices(),
-                fetchOnlineDevices(),
-                fetchDeviceWarnings(),
-                pingAPI()
-            ]);
+            const newData = await fetchLiveData();
             
-            // Update all values
-            totalDevices = total;
-            onlineDevices = online;
-            currentWarnings = warnings;
-            apiLatency = latency;
-            
-            // Update all card values
-            updateStats();
-            
-            // Update chart with new data if needed
-            // (For now, keep using sample data for charts)
-            metricsChart.update();
+            if (newData) {
+                // Update global variables
+                totalDevices = newData.totalDevices;
+                onlineDevices = newData.onlineDevices;
+                currentWarnings = newData.warnings;
+                apiLatency = newData.latency;
+                
+                // Update stats cards
+                updateStats();
+                
+                // Update live chart if on live view
+                if (currentDataRange === 'live') {
+                    updateLiveDataChart(newData);
+                }
+            }
         } catch (error) {
-            console.error('Error refreshing dashboard:', error);
+            // Silent error handling
         }
     }
 
     // Initialize dashboard
     updateStats();
     
-    // Initial live data fetch
-    updateLiveData();
+    // Initialize live data
+    initializeLiveData();
+    
+    // Initial data fetch and chart setup
+    fetchLiveData().then(newData => {
+        if (newData) {
+            totalDevices = newData.totalDevices;
+            onlineDevices = newData.onlineDevices;
+            currentWarnings = newData.warnings;
+            apiLatency = newData.latency;
+            
+            updateStats();
+            
+            // If already on live view, update the chart
+            if (currentDataRange === 'live') {
+                updateLiveDataChart(newData);
+            }
+        }
+    });
 
-    // Refresh entire dashboard every 1 second
-    setInterval(refreshDashboard, 1000);
+    // Refresh live dashboard every 5 seconds
+    setInterval(refreshLiveDashboard, 5000);
 }
 
 // Auto-initialize dashboard if we're already on the dashboard page

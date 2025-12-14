@@ -41,3 +41,10 @@
 
 4. APP
     -
+
+
+5. version
+    - v0.1 - iot boot.py
+    - v0.2 - iot main.py
+    - v0.3 - api
+    - v0.4 - dashboard

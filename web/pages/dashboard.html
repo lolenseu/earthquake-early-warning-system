@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 <body>
     <div class="dashboard">
         <div class="dashboard-header">
@@ -72,6 +75,7 @@
                 </div>
                 <div class="date-range-controls">
                     <select class="date-range-select" id="dateRangeSelect">
+                        <option value="live">Live</option>
                         <option value="day">1 Day</option>
                         <option value="week">1 Week</option>
                         <option value="month">1 Month</option>
@@ -83,5 +87,7 @@
             </div>
         </div>
     </div>
+    
+    <script src="../js/dashboard.js"></script>
 </body>
 </html>
