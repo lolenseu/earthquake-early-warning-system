@@ -5,6 +5,7 @@ import machine
 import os
 
 import utime as time
+import ujson as json
 import urequests as requests
 
 
@@ -102,21 +103,29 @@ def detect_earthquake(mpu):
         return None
     
 def fetch_data():
-    """Fetch dats from sever."""
+    """Fetch data from server (GET request, headers only)."""
     
     url = f"{API_URL}/eews/fetch"
-    json_headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    headers = {
+        "Accept": "text/plain"
+    }
     
-    try:   
-        response = requests.get(url, headers=json_headers)
+    try:
+        response = requests.get(url, headers=headers)
         
         if response.status_code == 200:
-            data = response.json()
+            text = response.text
+
+            try:
+                data = json.loads(text)
+            except:
+                data = text
+            
             param.REQUEST_DATA = data
             response.close()
             return data
-
         else:
+            response.close()
             return None
          
     except Exception as e:
@@ -124,13 +133,14 @@ def fetch_data():
         return None
         
 def post_data(data):
-    """Post data to server."""
+    """Post data to server using URL-encoded form instead of JSON."""
     
     url = f"{API_URL}/eews/post"
-    json_headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    headers = {"Content-Type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
     
     try:
-        response = requests.post(url, json=data, headers=json_headers)
+        payload_str = "&".join([f"{k}={v}" for k, v in data.items()])
+        response = requests.post(url, data=payload_str, headers=headers)
         response.close()
         return True
             
@@ -139,21 +149,21 @@ def post_data(data):
         return None
     
 def post_storage_data(data):
-    """Post data to api storage"""
-
+    """Post storage data to API using URL-encoded form."""
+    
     url = f"{API_URL_STORAGE}/eews/post_device_id"
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-
+    headers = {"Content-Type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+    
     try:
-        response = requests.post(url, json=data, headers=headers)
+        payload_str = "&".join([f"{k}={v}" for k, v in data.items()])
+        response = requests.post(url, data=payload_str, headers=headers)
         response.close()
         return True
 
     except Exception as e:
         eprint(PRINTSTATUS.ERROR, f"Storage POST error: {e}")
-        return False, None
+        return False
 
-    
 def storage_payload():
     """Build storage payload for device registration."""
     try:
@@ -167,7 +177,7 @@ def storage_payload():
     except Exception as e:
         eprint(PRINTSTATUS.ERROR, f"Storage payload build failed: {e}")
         return None
-
+    
 def payload(data=None):
     """Build payload. If no data, send zeros."""
     

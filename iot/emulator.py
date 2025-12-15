@@ -7,6 +7,7 @@ import requests
 
 API_URL_STORAGE = "https://lolenseu.pythonanywhere.com/pipeline"
 API_URL = "https://lolenseu.pythonanywhere.com/pipeline"
+#API_URL = "https://eews-api.vercel.app/pipeline"
 
 DEVICES = [
     {"id": "demo-r0-001", "auth_seed": "12345678", "latitude": 14.5995, "longitude": 120.9842},
@@ -51,22 +52,34 @@ class DeviceSimulator:
         return {"x_axis": round(x,3),"y_axis": round(y,3),"z_axis": round(z,3),"g_force": round(self.magnitude(x,y,z),3)}
 
     def build_payload(self, data):
-        return {
+        if isinstance(data, str):
+            return data
+
+        payload_dict = {
             "device_id": self.device_config["id"],
-            "auth_seed": self.device_config["auth_seed"],
-            "latitude": self.device_config["latitude"],
-            "longitude": self.device_config["longitude"],
-            "x_axis": data["x_axis"],
-            "y_axis": data["y_axis"],
-            "z_axis": data["z_axis"],
-            "g_force": data["g_force"],
+            "auth_seed": self.device_config.get("auth_seed", ""),
+            "latitude": self.device_config.get("latitude", 0.0),
+            "longitude": self.device_config.get("longitude", 0.0),
+            "x_axis": data["x_axis"] if data else 0.0,
+            "y_axis": data["y_axis"] if data else 0.0,
+            "z_axis": data["z_axis"] if data else 0.0,
+            "g_force": data["g_force"] if data else 0.0,
             "device_timestamp": time.time()
         }
 
+        payload_str = "&".join([f"{k}={v}" for k, v in payload_dict.items()])
+        return payload_str
+
     def post_data(self, data):
         url = f"{API_URL}/eews/post"
+        payload_str = self.build_payload(data)
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "text/plain"
+        }
+
         try:
-            response = requests.post(url, json=data, headers={"Content-Type":"application/json","Accept":"application/json"}, timeout=5)
+            response = requests.post(url, data=payload_str, headers=headers, timeout=5)
             if response.status_code == 200:
                 return True
             else:
@@ -78,15 +91,21 @@ class DeviceSimulator:
 
     def register_device(self):
         url = f"{API_URL_STORAGE}/eews/post_device_id"
+        payload_dict = {
+            "device_id": self.device_config["id"],
+            "auth_seed": self.device_config.get("auth_seed", ""),
+            "latitude": self.device_config.get("latitude", 0.0),
+            "longitude": self.device_config.get("longitude", 0.0),
+            "device_timestamp": time.time()
+        }
+        payload_str = "&".join([f"{k}={v}" for k, v in payload_dict.items()])
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "text/plain"
+        }
+
         try:
-            payload = {
-                "device_id": self.device_config["id"],
-                "auth_seed": self.device_config["auth_seed"],
-                "latitude": self.device_config["latitude"],
-                "longitude": self.device_config["longitude"],
-                "device_timestamp": time.time()
-            }
-            response = requests.post(url, json=payload, headers={"Content-Type":"application/json","Accept":"application/json"}, timeout=5)
+            response = requests.post(url, data=payload_str, headers=headers, timeout=5)
             if response.status_code == 200:
                 print(f"[{self.device_id}] Registered successfully")
                 return True

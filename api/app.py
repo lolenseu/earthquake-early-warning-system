@@ -1,6 +1,9 @@
 import os
+import time
 import json
 import requests
+import threading
+
 from flask import Flask, jsonify, request
 from datetime import datetime, timedelta
 
@@ -119,15 +122,26 @@ def eews_backend():
 def cleanup_eews_store():
     now = datetime.now()
     expired_devices = []
+
     for device_id, device_data in list(EEWS_STORE.items()):
+        ts_str = device_data.get("server_timestamp")
+        if not ts_str:
+            expired_devices.append(device_id)
+            continue
         try:
-            ts = datetime.fromisoformat(device_data["server_timestamp"])
+            ts = datetime.fromisoformat(ts_str)
             if now - ts > timedelta(seconds=EEWS_EXPIRY_SECONDS):
                 expired_devices.append(device_id)
-        except:
+        except Exception:
             expired_devices.append(device_id)
+
     for device_id in expired_devices:
-        del EEWS_STORE[device_id]
+        EEWS_STORE.pop(device_id, None)
+        
+def cleanup_loop():
+    while True:
+        cleanup_eews_store()
+        time.sleep(1)
         
 def load_eews_devices():
     if os.path.exists(EEWS_DEVICES_FILE):
@@ -300,15 +314,12 @@ def earthquake_early_warning_system_post():
     timestamp = datetime.now().isoformat()
     
     try:
-        cleanup_eews_store()
-        
-        data = request.get_json()
-        device_id = data.get('device_id')
-        x_axis = data.get('x_axis')
-        y_axis = data.get('y_axis')
-        z_axis = data.get('z_axis')
-        g_force = data.get('g_force')
-        device_timestamp = data.get('device_timestamp')
+        device_id = request.values.get('device_id')
+        x_axis = request.values.get('x_axis', type=float)
+        y_axis = request.values.get('y_axis', type=float)
+        z_axis = request.values.get('z_axis', type=float)
+        g_force = request.values.get('g_force', type=float)
+        device_timestamp = request.values.get('device_timestamp')
         
         if not device_id:
             return jsonify({"status": "error", "msg": "device_id missing"}), 400
@@ -330,48 +341,16 @@ def earthquake_early_warning_system_post():
         
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e),"server_timestamp": timestamp}), 500
-  
-@app.route('/pipeline/eews/fetch', methods=['GET', 'POST'])
-def  earthquake_early_warning_system_fetch():
-    timestamp = datetime.now().isoformat()
-    
-    try:
-        cleanup_eews_store()
-        
-        return jsonify({
-            "status": "success",
-            "data": "test"
-        }), 200
-        
-    except Exception as e:
-        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
-    
-@app.route('/pipeline/eews/v1/devices', methods=['GET', 'POST'])
-def earthquake_early_warning_system_devices():
-    timestamp = datetime.now().isoformat()
-    
-    try:
-        cleanup_eews_store()
-        
-        return jsonify({
-            "status": "success",
-            "devices": EEWS_STORE
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
-    
+ 
 @app.route('/pipeline/eews/post_device_id', methods=['POST'])
 def earthquake_early_warning_system_post_device_id():
     timestamp = datetime.now().isoformat()
 
     try:
-        data = request.get_json(force=True)
-
-        device_id = data.get("device_id")
-        auth_seed = data.get("auth_seed")
-        latitude = data.get("latitude")
-        longitude = data.get("longitude")
+        device_id = request.values.get("device_id")
+        auth_seed = request.values.get("auth_seed")
+        latitude = request.values.get("latitude", type=float)
+        longitude = request.values.get("longitude", type=float)
 
         if not device_id or not auth_seed:
             return jsonify({
@@ -397,14 +376,40 @@ def earthquake_early_warning_system_post_device_id():
 
     except Exception as e:
         return jsonify({"status": "error", "msg": f"Invalid request: {str(e)}", "server_timestamp": timestamp}), 400
+  
+@app.route('/pipeline/eews/fetch', methods=['GET', 'POST'])
+def  earthquake_early_warning_system_fetch():
+    timestamp = datetime.now().isoformat()
     
-@app.route('/pipeline/eews/v1/devices_list', methods=['GET', 'POST'])
-def earthquake_early_warning_system_devices_list():
+    try:
+        return jsonify({
+            "status": "success",
+            "data": "test"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
+    
+@app.route('/pipeline/eews/v1/devices', methods=['GET', 'POST'])
+def earthquake_early_warning_system_devices():
     timestamp = datetime.now().isoformat()
     
     try:
         cleanup_eews_store()
         
+        return jsonify({
+            "status": "success",
+            "devices": EEWS_STORE
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
+      
+@app.route('/pipeline/eews/v1/devices_list', methods=['GET', 'POST'])
+def earthquake_early_warning_system_devices_list():
+    timestamp = datetime.now().isoformat()
+    
+    try:
         devices_list = list(load_eews_devices())
         
         return jsonify({
@@ -422,6 +427,10 @@ def earthquake_early_warning_system_devices_list():
 def page_not_found(e):
     timestamp = datetime.now().isoformat()
     return Response.error('Invalid request', '', timestamp)
+
+# Setup
+cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
+cleanup_thread.start()
 
 # Main
 if __name__ == '__main__':

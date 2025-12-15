@@ -6,7 +6,8 @@ let currentWarnings = 0; // Will be updated from API
 
 // API Configuration
 const API_STORAGE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
-const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
+const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
+//const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
 
 // Live data arrays for real-time chart
 let liveData = {
