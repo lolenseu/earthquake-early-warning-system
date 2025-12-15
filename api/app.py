@@ -24,7 +24,7 @@ mem_data_stream:dict = {}
 EEWS_DEVICES: dict = {}
 EEWS_STORE: dict = {}
 
-EEWS_DEVICES_FILE = './eews_devices.json'
+EEWS_DEVICES_FILE = os.path.join(os.path.dirname(__file__), "eews_devices.json")
 
 EEWS_EXPIRY_SECONDS = 10
 
@@ -130,43 +130,47 @@ def cleanup_eews_store():
         del EEWS_STORE[device_id]
         
 def load_eews_devices():
-    """Load EEWS device IDs from local file"""
     if os.path.exists(EEWS_DEVICES_FILE):
         try:
-            with open(EEWS_DEVICES_FILE, 'r') as f:
+            with open(EEWS_DEVICES_FILE, "r") as f:
                 data = json.load(f)
-                return set(data.get('devices', []))
+                return data.get("devices", [])
         except:
-            return set()
-    return set()
+            return []
+    return []
 
-def save_eews_devices(devices_set):
-    """Save EEWS device IDs to local file"""
-    try:
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(EEWS_DEVICES_FILE), exist_ok=True)
-        
-        with open(EEWS_DEVICES_FILE, 'w') as f:
-            json.dump({'devices': list(devices_set), 'timestamp': datetime.now().isoformat()}, f)
-        return True
-    except:
-        return False
+def save_eews_devices(device):
+    os.makedirs(os.path.dirname(EEWS_DEVICES_FILE), exist_ok=True)
 
-def add_eews_device(device_id: str):
-    """Add new device to EEWS devices list if not already present"""
-    # Load current devices
-    devices = load_eews_devices()
-    
-    # Add new device if not present
-    if device_id not in devices:
-        devices.add(device_id)
-        
-        # Save updated list
-        if save_eews_devices(devices):
-            print(f"New EEWS device registered: {device_id}")
-            return True
-    
-    return False
+    if os.path.exists(EEWS_DEVICES_FILE):
+        with open(EEWS_DEVICES_FILE, "r") as f:
+            data = json.load(f)
+            devices = data.get("devices", [])
+    else:
+        devices = []
+
+    device_record = {
+        "device_id": device["device_id"],
+        "auth_seed": device["auth_seed"],
+        "latitude": device.get("latitude"),
+        "longitude": device.get("longitude"),
+        "registered_at": datetime.now().isoformat()
+    }
+
+    replaced = False
+    for i, d in enumerate(devices):
+        if d["device_id"] == device_record["device_id"]:
+            devices[i] = device_record
+            replaced = True
+            break
+
+    if not replaced:
+        devices.append(device_record)
+
+    with open(EEWS_DEVICES_FILE, "w") as f:
+        json.dump({"devices": devices, "updated_at": datetime.now().isoformat()}, f, indent=2)
+
+    return device_record
 
 # Routes
 @app.route('/pipeline', methods=['GET', 'POST'])
@@ -292,7 +296,7 @@ def pipeline():
         
 # EEWS api
 @app.route('/pipeline/eews/post', methods=['GET', 'POST'])
-def earthquake_early_warning_system():
+def earthquake_early_warning_system_post():
     timestamp = datetime.now().isoformat()
     
     try:
@@ -300,9 +304,6 @@ def earthquake_early_warning_system():
         
         data = request.get_json()
         device_id = data.get('device_id')
-        auth_seed = data.get('auth_seed')
-        latitude = data.get('latitude')
-        longtitude = data.get('latitude')
         x_axis = data.get('x_axis')
         y_axis = data.get('y_axis')
         z_axis = data.get('z_axis')
@@ -312,13 +313,8 @@ def earthquake_early_warning_system():
         if not device_id:
             return jsonify({"status": "error", "msg": "device_id missing"}), 400
         
-        add_eews_device(device_id)
-        
         EEWS_STORE[device_id] = {
             "device_id": device_id,
-            "auth_seed": auth_seed,
-            "latitude": latitude,
-            "longtitude": longtitude,
             "x_axis": x_axis,
             "y_axis": y_axis,
             "z_axis": z_axis,
@@ -365,6 +361,43 @@ def earthquake_early_warning_system_devices():
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
     
+@app.route('/pipeline/eews/post_device_id', methods=['POST'])
+def earthquake_early_warning_system_post_device_id():
+    timestamp = datetime.now().isoformat()
+
+    try:
+        data = request.get_json(force=True)
+
+        device_id = data.get("device_id")
+        auth_seed = data.get("auth_seed")
+        latitude = data.get("latitude")
+        longitude = data.get("longitude")
+
+        if not device_id or not auth_seed:
+            return jsonify({
+                "status": "error",
+                "msg": "device_id or auth_seed missing",
+                "server_timestamp": timestamp
+            }), 400
+
+        device = {
+            "device_id": device_id,
+            "auth_seed": auth_seed,
+            "latitude": latitude,
+            "longitude": longitude
+        }
+
+        saved_device = save_eews_devices(device)
+
+        return jsonify({
+            "status": "success",
+            "device": saved_device,
+            "server_timestamp": timestamp
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "msg": f"Invalid request: {str(e)}", "server_timestamp": timestamp}), 400
+    
 @app.route('/pipeline/eews/v1/devices_list', methods=['GET', 'POST'])
 def earthquake_early_warning_system_devices_list():
     timestamp = datetime.now().isoformat()
@@ -383,7 +416,7 @@ def earthquake_early_warning_system_devices_list():
 
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
-
+    
 # Error Handling
 @app.errorhandler(404)
 def page_not_found(e):

@@ -21,8 +21,6 @@ PAYLOAD = None                              # data to sent
 REQUEST_DATA = None                         # received data
 
 ## payload_data
-SEND_AUTH_SEED = False                      # send auth seed
-SEND_LOCATION = False                       # send location
 SEND_AXIS = False                           # send axis
 SEND_GFORCE = True                          # send gforce
 SEND_TIMESTAMP = False                      # send timestamp

@@ -5,8 +5,8 @@ let apiLatency = 0;    // Will be updated from ping
 let currentWarnings = 0; // Will be updated from API
 
 // API Configuration
-const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
-//const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
+const API_STORAGE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/v1';
+const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews/v1';
 
 // Live data arrays for real-time chart
 let liveData = {
@@ -51,7 +51,7 @@ const apiData = {
 // Fetch functions for live data
 async function fetchTotalDevices() {
     try {
-        const response = await fetch(`${API_BASE_URL}/devices_list`, {
+        const response = await fetch(`${API_STORAGE_URL}/devices_list`, {
             mode: 'cors',
             headers: {
                 'Accept': 'application/json',
@@ -179,7 +179,7 @@ function initDashboard() {
     
     const ctx = metricsChartEl.getContext('2d');
     let chartType = 'line';
-    let currentDataRange = 'day'; // Default to day view
+    let currentDataRange = 'live'; // Default to live view instead of day
 
     // Live chart configuration
     const liveChartConfig = {
@@ -267,7 +267,21 @@ function initDashboard() {
         }
     };
 
-    let metricsChart = new Chart(ctx, chartConfig);
+    // Start with live chart by default
+    let metricsChart = new Chart(ctx, liveChartConfig);
+    
+    // Initialize live data if empty
+    if (liveData.labels.length === 0) {
+        initializeLiveData();
+    }
+    
+    // Update chart with initial live data
+    updateLiveDataChart({
+        totalDevices: totalDevices,
+        onlineDevices: onlineDevices,
+        warnings: currentWarnings,
+        latency: apiLatency
+    });
 
     // Chart type switching
     const chartButtons = document.querySelectorAll('.chart-controls button');
@@ -291,6 +305,9 @@ function initDashboard() {
     // Date range filter switching
     const dateRangeSelect = document.getElementById('dateRangeSelect');
     if (dateRangeSelect) {
+        // Set live as default selection
+        dateRangeSelect.value = 'live';
+        
         dateRangeSelect.addEventListener('change', () => {
             // Update data range
             currentDataRange = dateRangeSelect.value;
@@ -414,8 +431,8 @@ function initDashboard() {
         }
     });
 
-    // Refresh live dashboard every 5 seconds
-    setInterval(refreshLiveDashboard, 5000);
+    // Refresh live dashboard every 1 second
+    setInterval(refreshLiveDashboard, 1000);
 }
 
 // Auto-initialize dashboard if we're already on the dashboard page

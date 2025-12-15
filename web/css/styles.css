@@ -21,27 +21,21 @@ body {
 
 /* Sidebar */
 .sidebar {
-    background: linear-gradient(135deg, #4a61c7 0%, #472c61 100%);
+    background: linear-gradient(135deg, #4a61c7 0%, #6b3fa0 100%);
     width: 280px;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
     display: flex;
-    position: relative;
     flex-direction: column;
+    position: relative;
+    transition: all 0.4s ease;
 }
 
-.sidebar-toggle {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 10;
-}
-
+/* Sidebar collapsed */
 .sidebar.collapsed {
-    width: 80px;
-    padding: 20px 10px;
+    width: 90px;
+    padding: 15px 12px;
 }
 
 /* Sidebar header */
@@ -49,73 +43,79 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 30px;
+    margin-bottom: 35px;
     padding-bottom: 20px;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-}
-
-.sidebar.collapsed .sidebar-header {
-    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.3s ease;
 }
 
 /* Logo */
 .logo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.logo h3 {
+    color: #fff;
+    font-weight: 700;
+    font-size: 20px;
 }
 
 .sidebar.collapsed .logo h3 {
     display: none;
 }
 
+/* Icons */
 .logo .material-icons {
-    font-size: 32px;
-    color: white;
+    font-size: 36px ;
+    color: #fff;
 }
 
-.logo h3 {
-    color: white;
-    font-weight: 600;
-    font-size: 18px;
-}
-
-/* Sidebar toggle button */
+/* Sidebar toggle */
 .sidebar-toggle {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
-    color: white;
-    border-radius: 8px;
-    padding: 8px;
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px;
     cursor: pointer;
+    text-align: center;
     transition: all 0.3s ease;
 }
 
 .sidebar-toggle:hover {
     background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
 }
 
-/* Navigation */
+/* Navigation items */
 .sidebar-nav ul {
     list-style: none;
+    padding-top: 10px;
 }
 
 .sidebar-nav li {
-    margin-bottom: 8px;
-    padding: 12px 15px;
-    border-radius: 10px;
-    color: white;
+    margin-bottom: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    color: #fff;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
     transition: all 0.3s ease;
     position: relative;
 }
 
 .sidebar.collapsed .sidebar-nav li {
     justify-content: center;
-    padding: 12px 8px;
+    padding: 14px 8px;
+}
+
+.sidebar-nav li span:last-child {
+    transition: opacity 0.3s ease;
 }
 
 .sidebar.collapsed .sidebar-nav li span:last-child {
@@ -123,130 +123,90 @@ body {
 }
 
 .sidebar-nav li:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
     transform: translateX(5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar.collapsed .sidebar-nav li:hover {
     transform: none;
+    box-shadow: none;
 }
 
 .sidebar-nav li.active {
-    background: rgba(255, 255, 255, 0.2);
-    border-left: 4px solid white;
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .sidebar.collapsed .sidebar-nav li.active {
     border-left: none;
-    border-top: 4px solid white;
-    border-radius: 8px 8px 0 0;
+    border-radius: 12px;
 }
 
+/* Navigation icons */
 .sidebar-nav li .material-icons {
-    font-size: 20px;
+    font-size: 22px;
+}
+
+/* Smooth icon transitions */
+.sidebar-nav li .material-icons {
+    transition: transform 0.3s ease;
+}
+
+.sidebar-nav li:hover .material-icons {
+    transform: scale(1.2);
 }
 
 /* Main container */
 .main-container {
     flex: 1;
-    background: white;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    border-radius: 20px;
+    padding: 35px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
     min-height: 100%;
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
     overflow-y: auto;
 }
 
-/* Responsive design */
+/* Mobile improvements */
 @media (max-width: 768px) {
-    .layout-container {
-        flex-direction: column;
-        padding: 0;
-    }
-    
     .sidebar {
         width: 100%;
-        order: 1;
-        border-radius: 15px 15px 0 0;
+        border-radius: 20px 20px 0 0;
         position: sticky;
         top: 0;
         z-index: 100;
-        margin-bottom: 0;
     }
-    
+
     .main-container {
-        order: 2;
-        border-radius: 0 0 15px 15px;
-        margin-top: 0;
-        flex: 1;
+        border-radius: 0 0 20px 20px;
     }
-    
-    /* Completely hide nav content on mobile by default */
+
     .sidebar-nav {
         display: none;
     }
-    
-    /* Show nav content when sidebar is not collapsed */
+
     .sidebar:not(.collapsed) .sidebar-nav {
         display: block;
     }
-    
-    /* Sidebar header layout for mobile - 3-line button on left, logo on right */
-    .sidebar-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-    }
-    
+
     .sidebar-toggle {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        color: white;
-        border-radius: 8px;
-        padding: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
         flex-shrink: 0;
     }
-    
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
-        justify-content: flex-end;
-    }
-    
-    /* Mobile full-screen mode - keep header positioning */
-    .sidebar.mobile-fullscreen .sidebar-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-    }
-    
-    .sidebar.mobile-fullscreen .sidebar-toggle {
-        flex-shrink: 0;
-    }
-    
-    .sidebar.mobile-fullscreen .logo {
-        justify-content: flex-end;
-    }
-    
+
     .sidebar.mobile-fullscreen {
         position: fixed;
-        top: 0;
-        left: 0;
         width: 100%;
         height: 100vh;
-        z-index: 200;
+        top: 0;
+        left: 0;
         border-radius: 0;
+        background: linear-gradient(135deg, #4a61c7, #6b3fa0);
+        z-index: 200;
     }
-    
+
     .main-container.mobile-blur {
-        filter: blur(2px);
+        filter: blur(3px);
         pointer-events: none;
     }
 }

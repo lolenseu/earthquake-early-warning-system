@@ -137,7 +137,37 @@ def post_data(data):
     except Exception as e:
         eprint(PRINTSTATUS.ERROR, f"Post error: {e}")
         return None
-        
+    
+def post_storage_data(data):
+    """Post data to api storage"""
+
+    url = f"{API_URL_STORAGE}/eews/post_device_id"
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        response.close()
+        return True
+
+    except Exception as e:
+        eprint(PRINTSTATUS.ERROR, f"Storage POST error: {e}")
+        return False, None
+
+    
+def storage_payload():
+    """Build storage payload for device registration."""
+    try:
+        return {    
+            "device_id": param.DEVICE_ID,
+            "auth_seed": param.AUTH_SEED,
+            "latitude": param.LATITUDE,
+            "longitude": param.LONGITUDE
+        }
+
+    except Exception as e:
+        eprint(PRINTSTATUS.ERROR, f"Storage payload build failed: {e}")
+        return None
+
 def payload(data=None):
     """Build payload. If no data, send zeros."""
     
@@ -152,14 +182,6 @@ def payload(data=None):
             g_force = 0.0
 
         payload = {}
-        
-        # Conditionally add fields based on parameters
-        if param.SEND_AUTH_SEED:
-            payload["auth_seed"] = param.AUTH_SEED
-            
-        if param.SEND_LOCATION:
-            payload["latitude"] = param.LATITUDE
-            payload["longitude"] = param.LONGITUDE
             
         if param.SEND_AXIS:
             payload["x_axis"] = x_axis
@@ -172,7 +194,6 @@ def payload(data=None):
         if param.SEND_TIMESTAMP:
             payload["device_timestamp"] = time.time()
             
-        # Always include device_id
         payload["device_id"] = param.DEVICE_ID
 
         return payload
@@ -215,6 +236,10 @@ def main():
     if mpu is None:
         tprint(PRINTSTATUS.ERROR, "Hardware initialization failed")
         return
+    
+    tprint(PRINTSTATUS.INFO, "Registering device...")
+    if post_storage_data(storage_payload()):
+        tprint(PRINTSTATUS.SUCCESS, "Registration successful")
     
     earthquake_active = False
     earthquake_start_time = None

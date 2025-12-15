@@ -36,7 +36,7 @@
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(0);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
@@ -73,7 +73,6 @@
 .current-warnings-card {
     background: linear-gradient(135deg, #ff416c 0%, #8d2817 100%);
 }
-
 
 /* New card layout */
 .card-content {
@@ -115,10 +114,9 @@
 
 /* Chart section */
 .chart-section {
-    background: white;
+    background: transparent;
     border-radius: 15px;
     padding: 25px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
 
 .chart-header {
@@ -134,31 +132,58 @@
     font-weight: 600;
 }
 
-.chart-controls {
-    display: flex;
-    gap: 10px;
-}
-
-.chart-controls button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 8px;
-    background: #667eea;
-    color: white;
+/* Buttons and Dropdown - Unified Styles */
+.chart-controls button,
+.date-range-select {
+    margin: 5px;
+    padding: 5px 10px;
+    border: 2px solid #212121;
+    border-radius: 15px;
+    background: transparent;
+    color: #212121;
+    font-size: 17px;
+    font-weight: 700;
     cursor: pointer;
-    font-weight: 500;
+    position: relative;
+    overflow: hidden;
     transition: all 0.3s ease;
 }
 
-.chart-controls button:hover {
-    background: #5a6fd8;
-    transform: translateY(-2px);
+.chart-controls button::before,
+.date-range-select::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    border-radius: 15px;
+    background-color: purple;
+    z-index: -1;
+    transition: width 0.3s ease;
 }
 
-.chart-controls button.active {
-    background: #764ba2;
+.chart-controls button:hover,
+.chart-controls button.active,
+.date-range-select:hover,
+.date-range-select.active {
+    color: #667eea;
 }
 
+.chart-controls button:hover::before,
+.chart-controls button.active::before,
+.date-range-select:hover::before,
+.date-range-select.active::before {
+    width: 100%;
+}
+
+/* Dropdown options */
+.date-range-select option {
+    color: #212121;
+    background: rgb(255, 255, 255);
+}
+
+/* Chart container */
 .chart-container {
     position: relative;
     height: 400px;
@@ -170,36 +195,7 @@
     gap: 10px;
 }
 
-.date-range-select {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 8px;
-    background: #4facfe;
-    color: white;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    font-size: 14px;
-    min-width: 120px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.date-range-select:hover {
-    background: #38a1e7;
-    transform: translateY(-2px);
-}
-
-.date-range-select:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.3);
-}
-
-.chart-container {
-    position: relative;
-    height: 400px;
-}
-
-/* Live chart specific styles */
+/* Live chart */
 .live-chart-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -207,10 +203,10 @@
 }
 
 .live-chart-card {
-    background: white;
+    background: transparent;
     border-radius: 15px;
+    border: 2px solid #212121;
     padding: 20px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
 
 .live-chart-title {
