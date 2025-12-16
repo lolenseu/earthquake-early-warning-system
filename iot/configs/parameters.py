@@ -13,8 +13,8 @@ DEVICE_ID = "ver1-r1-001"                   # unique device identifier *version 
 AUTH_SEED = "12345678"                      # authentication seed
 
 ## location
-LATITUDE = 14.5995                          # device latitude
-LONGITUDE = 120.9842                        # device longitude
+LATITUDE = 17.577784                        # device latitude
+LONGITUDE = 120.389451                      # device longitude
 
 ## payloads
 PAYLOAD = None                              # data to sent

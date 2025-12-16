@@ -10,16 +10,16 @@ API_URL = "https://lolenseu.pythonanywhere.com/pipeline"
 #API_URL = "https://eews-api.vercel.app/pipeline"
 
 DEVICES = [
-    {"id": "demo-r0-001", "auth_seed": "12345678", "latitude": 14.5995, "longitude": 120.9842},
-    {"id": "demo-r0-002", "auth_seed": "87654321", "latitude": 14.6001, "longitude": 120.9850},
-    {"id": "demo-r0-003", "auth_seed": "11223344", "latitude": 14.5989, "longitude": 120.9835},
-    {"id": "demo-r0-004", "auth_seed": "44332211", "latitude": 14.6010, "longitude": 120.9860},
-    {"id": "demo-r0-005", "auth_seed": "55667788", "latitude": 14.5975, "longitude": 120.9820},
-    {"id": "demo-r0-006", "auth_seed": "99887766", "latitude": 14.6025, "longitude": 120.9875},
-    {"id": "demo-r0-007", "auth_seed": "13579246", "latitude": 14.5960, "longitude": 120.9810},
-    {"id": "demo-r0-008", "auth_seed": "24681357", "latitude": 14.6040, "longitude": 120.9890},
-    {"id": "demo-r0-009", "auth_seed": "11112222", "latitude": 14.5945, "longitude": 120.9800},
-    {"id": "demo-r0-010", "auth_seed": "33334444", "latitude": 14.6055, "longitude": 120.9905},
+    {"id": "demo-r0-001", "auth_seed": "12345678", "latitude": 17.592374, "longitude": 120.400231},
+    {"id": "demo-r0-002", "auth_seed": "87654321", "latitude": 17.557892, "longitude": 120.372987},
+    {"id": "demo-r0-003", "auth_seed": "11223344", "latitude": 17.586123, "longitude": 120.403654},
+    {"id": "demo-r0-004", "auth_seed": "44332211", "latitude": 17.561234, "longitude": 120.376543},
+    {"id": "demo-r0-005", "auth_seed": "55667788", "latitude": 17.591876, "longitude": 120.382765},
+    {"id": "demo-r0-006", "auth_seed": "99887766", "latitude": 17.558765, "longitude": 120.395432},
+    {"id": "demo-r0-007", "auth_seed": "13579246", "latitude": 17.584321, "longitude": 120.407123},
+    {"id": "demo-r0-008", "auth_seed": "24681357", "latitude": 17.589543, "longitude": 120.379876},
+    {"id": "demo-r0-009", "auth_seed": "11112222", "latitude": 17.555678, "longitude": 120.384987},
+    {"id": "demo-r0-010", "auth_seed": "33334444", "latitude": 17.593124, "longitude": 120.386543}
 ]
 
 BASELINE_NOISE = 0.05
@@ -133,6 +133,7 @@ class DeviceSimulator:
     def start(self):
         if not self.online:
             self.online = True
+            self.register_device()
         if self.g_force == 0:
             self.g_force = 1.0
         if self.thread is None or not self.thread.is_alive():
@@ -161,11 +162,14 @@ class DeviceSimulator:
 
     def toggle_online(self):
         if self.online:
+            self.online = False
             self.stop()
         else:
             self.online = True
-            if self.g_force > 0:
-                self.start()
+            if self.g_force == 0:
+                self.g_force = 1.0
+            self.register_device()
+            self.start()
 
 class EarthquakeEmulator:
     def __init__(self, root):

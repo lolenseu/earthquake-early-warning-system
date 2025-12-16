@@ -3,6 +3,11 @@ const sidebarToggle = document.getElementById("sidebarToggle");
 const mainContainer = document.getElementById("mainContainer");
 const navItems = document.querySelectorAll(".nav-item");
 
+// Reload the page
+function refreshPage() {
+    location.reload();
+}
+
 // Check if mobile and handle sidebar state
 function checkMobile() {
     const isMobile = window.innerWidth <= 768;

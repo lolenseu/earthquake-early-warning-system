@@ -436,14 +436,7 @@ function initDashboard() {
     setInterval(refreshLiveDashboard, 1000);
 }
 
-// Auto-initialize dashboard if we're already on the dashboard page
-if (window.location.href.includes('dashboard')) {
-    // Wait for DOM to be ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initDashboard, 500);
-        });
-    } else {
-        setTimeout(initDashboard, 500);
-    }
+// Only export the initDashboard function for external use
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { initDashboard };
 }

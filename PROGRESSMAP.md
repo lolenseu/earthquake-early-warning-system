@@ -37,7 +37,8 @@
     - side menu bar
     - dashboard
     - design of the cards
-    - desing of the graph
+    - design of the graph
+    - design of the map 
 
 4. APP
     -
@@ -48,3 +49,4 @@
     - v0.2 - iot main.py
     - v0.3 - api
     - v0.4 - dashboard
+    - v0.5 - iot map

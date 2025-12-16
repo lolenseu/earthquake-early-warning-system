@@ -260,6 +260,8 @@ def main():
     counter = 0
     shake_counter = 0
     stable_counter = 0
+    earthquake_end_time = None
+    post_quake_delay = 3 
     
     tprint(PRINTSTATUS.INFO, "Starting earthquake detection...")
 
@@ -270,9 +272,9 @@ def main():
         if data:
             shake_counter += 1
             stable_counter = 0
+            earthquake_end_time = None
         else:
             stable_counter += 1
-            shake_counter = 0
 
         if shake_counter >= param.REQUIRED_SHAKE_COUNT and not earthquake_active:
             earthquake_active = True
@@ -283,14 +285,21 @@ def main():
                 tprint(PRINTSTATUS.INFO, "Earthquake detected!")
                 last_state_print = "earthquake"
 
-        if stable_counter * param.SAMPLE_INTERVAL >= param.STABLE_TIME and earthquake_active:
-            earthquake_active = False
-            earthquake_start_time = None
-            counter = 0
-            
-            if last_state_print != "normal":
-                tprint(PRINTSTATUS.INFO, "No earthquake detected")
-                last_state_print = "normal"
+        if earthquake_active and stable_counter * param.SAMPLE_INTERVAL >= param.STABLE_TIME:
+            if earthquake_end_time is None:
+                earthquake_end_time = now
+                
+            elif now - earthquake_end_time >= post_quake_delay:
+                earthquake_active = False
+                earthquake_start_time = None
+                counter = 0
+                shake_counter = 0
+                stable_counter = 0
+                earthquake_end_time = None
+                
+                if last_state_print != "normal":
+                    tprint(PRINTSTATUS.INFO, "No earthquake detected")
+                    last_state_print = "normal"
 
         if earthquake_active and data:
             counter += 1
@@ -326,6 +335,7 @@ def main():
                 tprint(PRINTSTATUS.INFO, "No earthquake detected")
                 last_state_print = "normal"
 
-        time.sleep(param.NORMAL_INTERVAL)
+        time.sleep(param.SAMPLE_INTERVAL)
+
 
         
