@@ -48,11 +48,13 @@ def log_to_file(log_type: str, message: str) -> None:
         filename = get_log_filename(log_type)
         
         if log_type == "runtime":
-            with open(filename, "a") as f:
-                f.write(message + "\n")
+            pass # disable runtime logging
+            #with open(filename, "a") as f:
+            #    f.write(message + "\n")
         else:
-            with open(filename, "a") as f:
-                f.write(message + "\n")
+            pass # disable error logging
+            #with open(filename, "a") as f:
+            #    f.write(message + "\n")
                 
     except:
         pass

@@ -1,0 +1,97 @@
+/* Map Page Styles */
+
+/* Map header */
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.map-header h1 {
+    color: #333;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.map-header .last-updated {
+    color: #666;
+    font-size: 14px;
+}
+
+/* Map container */
+#mapid {
+    flex: 1;
+    height: calc(85vh - 80px);
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+/* Marker popups */
+.leaflet-popup-content-wrapper {
+    border-radius: 15px;
+    padding: 10px 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.leaflet-popup-content {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+/* Custom marker icons hover effect */
+.leaflet-marker-icon {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leaflet-marker-icon:hover {
+    transform: scale(1.2);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+
+/* Map card for info (optional future stats) */
+.map-info-card {
+    position: absolute;
+    top: 100px;
+    right: 20px;
+    background: linear-gradient(135deg, #4facfe 0%, #285983 100%);
+    padding: 20px;
+    border-radius: 15px;
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+    z-index: 2000;
+    transition: all 0.3s ease;
+}
+
+.map-info-card h2 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.map-info-card p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .map-header h1 {
+        font-size: 22px;
+    }
+
+    #mapid {
+        height: calc(100vh - 70px);
+    }
+
+    .map-info-card {
+        top: 80px;
+        right: 10px;
+        padding: 15px;
+        font-size: 13px;
+    }
+}

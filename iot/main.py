@@ -84,7 +84,9 @@ def detect_earthquake(mpu):
     """Reads accelerometer, computes G-force, and returns dict."""
     
     try:
-        x_axis, y_axis, z_axis = smooth_read(mpu, param.SMOOTH_READ_SAMPLING)
+        x_axis, y_axis, z_axis = mpu.read_accel()
+        #x_axis, y_axis, z_axis = smooth_read(mpu, param.SMOOTH_READ_SAMPLING)                  #filter is disabled
+        
         g_force = magnitude(x_axis, y_axis, z_axis)
 
         data = {

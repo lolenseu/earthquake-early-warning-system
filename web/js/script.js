@@ -104,6 +104,19 @@ function loadPage(page) {
                     }
                 }, 200);
             }
+
+            // Initialize map if map page is loaded
+            if (page.includes('map.html')) {
+                console.log('Map page loaded, initializing...');
+                // Wait for DOM to be ready and init map
+                setTimeout(() => {
+                    if (typeof initMap === 'function') {
+                        initMap();
+                    } else {
+                        console.error('initMap function not found');
+                    }
+                }, 200);
+            }
         })
         .catch(err => {
             mainContainer.innerHTML = `<p style="color:red;">Failed to load ${page}</p>`;

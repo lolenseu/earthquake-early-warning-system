@@ -29,7 +29,7 @@ EEWS_STORE: dict = {}
 
 EEWS_DEVICES_FILE = os.path.join(os.path.dirname(__file__), "eews_devices.json")
 
-EEWS_EXPIRY_SECONDS = 10
+EEWS_EXPIRY_SECONDS = 30
 
 # Response Class
 class Response:
