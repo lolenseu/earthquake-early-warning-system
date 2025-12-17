@@ -122,6 +122,19 @@ function loadPage(page) {
                     }
                 }, 200);
             }
+
+            // Initialize devices if devices page is loaded
+            if (page.includes('devices.html')) {
+                console.log('Devices page loaded, initializing...');
+                // Wait for DOM to be ready and init devices
+                setTimeout(() => {
+                    if (typeof initDevices === 'function') {
+                        initDevices();
+                    } else {
+                        console.error('initDevices function not found');
+                    }
+                }, 200);
+            }
         })
         .catch(err => {
             mainContainer.innerHTML = `<p style="color:red;">Failed to load ${page}</p>`;

@@ -241,101 +241,85 @@ def init_mpu6050():
 
 ## main function  
 def main():
-    
     tprint(PRINTSTATUS.INFO, "Initializing Hardware...")
     mpu = init_mpu6050()
-    
+
     if mpu is None:
         tprint(PRINTSTATUS.ERROR, "Hardware initialization failed")
         return
-    
+
     tprint(PRINTSTATUS.INFO, "Registering device...")
     if post_storage_data(storage_payload()):
         tprint(PRINTSTATUS.SUCCESS, "Registration successful")
-    
-    earthquake_active = False
-    earthquake_start_time = None
-    last_state_print = None
 
-    counter = 0
-    shake_counter = 0
-    stable_counter = 0
-    earthquake_end_time = None
-    post_quake_delay = 3 
-    
+    MODE_NORMAL = 0
+    MODE_EARTHQUAKE = 1
+    MODE_SLEEP = 2
+
+    mode = MODE_NORMAL
+    last_printed_mode = None
+
+    exit_deadline = None
+
     tprint(PRINTSTATUS.INFO, "Starting earthquake detection...")
 
     while True:
-        data = detect_earthquake(mpu)
-        now = time.time()
+        if mode == MODE_NORMAL:
+            if last_printed_mode != MODE_NORMAL:
+                tprint(PRINTSTATUS.INFO, "No earthquake detected")
+                last_printed_mode = MODE_NORMAL
 
-        if data:
-            shake_counter += 1
-            stable_counter = 0
-            earthquake_end_time = None
-        else:
-            stable_counter += 1
+            shake_detected = False
 
-        if shake_counter >= param.REQUIRED_SHAKE_COUNT and not earthquake_active:
-            earthquake_active = True
-            earthquake_start_time = now
-            counter = 0
-            
-            if last_state_print != "earthquake":
-                tprint(PRINTSTATUS.INFO, "Earthquake detected!")
-                last_state_print = "earthquake"
+            for _ in range(param.REQUIRED_SHAKE_COUNT):
+                data = detect_earthquake(mpu)
+                if data:
+                    shake_detected = True
+                    break
+                time.sleep(param.NORMAL_INTERVAL / param.REQUIRED_SHAKE_COUNT)
 
-        if earthquake_active and stable_counter * param.SAMPLE_INTERVAL >= param.STABLE_TIME:
-            if earthquake_end_time is None:
-                earthquake_end_time = now
-                
-            elif now - earthquake_end_time >= post_quake_delay:
-                earthquake_active = False
-                earthquake_start_time = None
-                counter = 0
-                shake_counter = 0
-                stable_counter = 0
-                earthquake_end_time = None
-                
-                if last_state_print != "normal":
-                    tprint(PRINTSTATUS.INFO, "No earthquake detected")
-                    last_state_print = "normal"
+            if shake_detected:
+                mode = MODE_EARTHQUAKE
+                exit_deadline = None
+                continue
 
-        if earthquake_active and data:
-            counter += 1
-            
-            param.PAYLOAD = payload(data)
-            post_data(param.PAYLOAD)
-            
-            tprint(PRINTSTATUS.INFO, f"Magnitude: {data['g_force']:.3f} g")
-            
-            time.sleep(param.SAMPLE_INTERVAL)
+            if 1 == 0:
+                mode = MODE_SLEEP
+                continue
+
+            post_data(payload(None))
+            fetch_data()
+            time.sleep(param.NORMAL_INTERVAL)
             continue
 
-        if 0 == 1:
-            if last_state_print != "sleep":
-                last_state_print = "sleep"
-                counter = 0
-                
-                param.PAYLOAD = payload(None)
-                post_data(param.PAYLOAD)
-                
+        if mode == MODE_EARTHQUAKE:
+            if last_printed_mode != MODE_EARTHQUAKE:
+                tprint(PRINTSTATUS.INFO, "Earthquake detected!")
+                last_printed_mode = MODE_EARTHQUAKE
+
+            data = detect_earthquake(mpu)
+            now = time.time()
+
+            if data:
+                exit_deadline = None
+                post_data(payload(data))
+                tprint(PRINTSTATUS.INFO, f"Magnitude: {data['g_force']:.3f} g")
+            else:
+                if exit_deadline is None:
+                    exit_deadline = now + param.STABLE_TIME
+                elif now >= exit_deadline:
+                    mode = MODE_NORMAL
+                    exit_deadline = None
+
+            time.sleep(param.EARTHQUAKE_INTERVAL)
+            continue
+
+        if mode == MODE_SLEEP:
+            if last_printed_mode != MODE_SLEEP:
                 tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
-                
+                last_printed_mode = MODE_SLEEP
+
+            post_data(payload(None))
             fetch_data()
             time.sleep(param.SLEEP_INTERVAL)
-            continue
-
-        if not earthquake_active:
-            param.PAYLOAD = payload(None)
-            post_data(param.PAYLOAD)
-            fetch_data()
             
-            if last_state_print != "normal":
-                tprint(PRINTSTATUS.INFO, "No earthquake detected")
-                last_state_print = "normal"
-
-        time.sleep(param.SAMPLE_INTERVAL)
-
-
-        

@@ -50,3 +50,4 @@
     - v0.3 - api
     - v0.4 - dashboard
     - v0.5 - iot map
+    - v0.6 - iot devices

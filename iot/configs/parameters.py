@@ -34,9 +34,9 @@ MAX_LOOP = 100                              # max loops before restart
 ## earthquake detection parameters
 EARTHQUAKE_THRESHOLD = 1.35                 # G-force magnitude above this considered earthquake
 SMOOTH_READ_SAMPLING = 1                    # reading samples
-REQUIRED_SHAKE_COUNT = 1                    # earthquake samples to triger
+REQUIRED_SHAKE_COUNT = 5                    # earthquake samples to triger
 
-STABLE_TIME = 3                             # seconds required to say "safe"
-SAMPLE_INTERVAL = 0.1                       # seconds between samples
-NORMAL_INTERVAL = 1                         # seconds normal iterations
-SLEEP_INTERVAL = 10                         # seconds sleep in ultra-low-power mode
+STABLE_TIME = 10                            # seconds required to say "safe"
+EARTHQUAKE_INTERVAL = 0.05                  # seconds between samples
+NORMAL_INTERVAL = 0.5                       # seconds normal iterations
+SLEEP_INTERVAL = 5                          # seconds sleep in ultra-low-power mode

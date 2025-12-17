@@ -42,7 +42,7 @@ body {
 .sidebar-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     margin-bottom: 35px;
     padding-bottom: 20px;
     border-bottom: 2px solid rgba(255, 255, 255, 0.15);
@@ -80,6 +80,7 @@ body {
     color: #fff;
     border-radius: 12px;
     padding: 10px;
+    margin: 13px;
     cursor: pointer;
     text-align: center;
     transition: all 0.3s ease;
