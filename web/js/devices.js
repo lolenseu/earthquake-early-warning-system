@@ -31,7 +31,7 @@ function createDeviceCard(deviceInfo, liveDevice) {
     const gForce = liveDevice?.g_force || 0;
     let statusClass = 'status-offline';
     let statusText = 'Offline';
-    let gForceText = 'G-Force: 0.0';
+    let gForceText = '0.0';
     let statusSign = 'Normal';
     let statusSignClass = 'status-sign-normal';
     
@@ -44,7 +44,7 @@ function createDeviceCard(deviceInfo, liveDevice) {
     }
 
     if (liveDevice) {
-        gForceText = `G-Force: ${gForce}`;
+        gForceText = `${gForce.toFixed(1)}`;
         if (gForce > 1.35) {
             statusSign = 'Earthquake';
             statusSignClass = 'status-sign-warning';
@@ -73,12 +73,16 @@ function createDeviceCard(deviceInfo, liveDevice) {
                     <span class="value">${deviceInfo.device_id}</span>
                 </div>
                 <div class="device-detail">
-                    <span class="label">Location:</span>
+                    <span class="label">Magnitude:</span>
+                    <span class="value">${gForceText}</span>
+                </div>
+                <div class="device-detail">
+                    <span class="label">Coordinates:</span>
                     <span class="value">${deviceInfo.latitude.toFixed(4)}, ${deviceInfo.longitude.toFixed(4)}</span>
                 </div>
                 <div class="device-detail">
-                    <span class="label">Magnitude:</span>
-                    <span class="value">${gForceText}</span>
+                    <span class="label">Location:</span>
+                    <span class="value">${deviceInfo.location || 'Unknown'}</span>
                 </div>
             </div>
             <span class="material-icons action-btn">more_vert</span>

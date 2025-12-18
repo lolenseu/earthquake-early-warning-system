@@ -30,7 +30,8 @@
     - request handler
     - handle devices
     - auto clear inactive devices
-    - 
+    - coordinate locator
+    -
 
 3. WEB PLATFORM
     - deploying to vercel platform
@@ -39,6 +40,7 @@
     - design of the cards
     - design of the graph
     - design of the map 
+    - desing of the devices
 
 4. APP
     -
@@ -51,3 +53,4 @@
     - v0.4 - dashboard
     - v0.5 - iot map
     - v0.6 - iot devices
+    -

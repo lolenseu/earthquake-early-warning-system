@@ -38,5 +38,5 @@ REQUIRED_SHAKE_COUNT = 5                    # earthquake samples to triger
 
 STABLE_TIME = 10                            # seconds required to say "safe"
 EARTHQUAKE_INTERVAL = 0.05                  # seconds between samples
-NORMAL_INTERVAL = 0.5                       # seconds normal iterations
+NORMAL_INTERVAL = 0.1                       # seconds normal iterations
 SLEEP_INTERVAL = 5                          # seconds sleep in ultra-low-power mode

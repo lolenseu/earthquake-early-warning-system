@@ -253,8 +253,8 @@ def main():
         tprint(PRINTSTATUS.SUCCESS, "Registration successful")
 
     MODE_NORMAL = 0
-    MODE_EARTHQUAKE = 1
-    MODE_SLEEP = 2
+    MODE_SLEEP = 1
+    MODE_EARTHQUAKE = 2
 
     mode = MODE_NORMAL
     last_printed_mode = None
@@ -292,6 +292,20 @@ def main():
             time.sleep(param.NORMAL_INTERVAL)
             continue
 
+        if mode == MODE_SLEEP:
+            if last_printed_mode != MODE_SLEEP:
+                tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
+                last_printed_mode = MODE_SLEEP
+                
+            if 1 == 0:
+                mode = MODE_NORMAL
+                continue
+
+            post_data(payload(None))
+            fetch_data()
+            time.sleep(param.SLEEP_INTERVAL)
+            continue
+            
         if mode == MODE_EARTHQUAKE:
             if last_printed_mode != MODE_EARTHQUAKE:
                 tprint(PRINTSTATUS.INFO, "Earthquake detected!")
@@ -312,14 +326,4 @@ def main():
                     exit_deadline = None
 
             time.sleep(param.EARTHQUAKE_INTERVAL)
-            continue
-
-        if mode == MODE_SLEEP:
-            if last_printed_mode != MODE_SLEEP:
-                tprint(PRINTSTATUS.INFO, "Entering ultra-low-power mode")
-                last_printed_mode = MODE_SLEEP
-
-            post_data(payload(None))
-            fetch_data()
-            time.sleep(param.SLEEP_INTERVAL)
             

@@ -153,6 +153,40 @@ def load_eews_devices():
             return []
     return []
 
+def get_city_from_coordinates(latitude, longitude):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse"
+        params = {
+            'format': 'json',
+            'lat': latitude,
+            'lon': longitude,
+            'addressdetails': 1,
+            'accept-language': 'en'
+        }
+        
+        response = requests.get(url, params=params, headers={
+            'User-Agent': 'EEWS-Monitor/1.0'
+        })
+        
+        if response.status_code == 200:
+            data = response.json()
+            address = data.get('address', {})
+            
+            city = (address.get('city') or 
+                   address.get('town') or 
+                   address.get('village') or 
+                   address.get('hamlet') or 
+                   address.get('municipality') or
+                   address.get('state') or
+                   'Unknown')
+            
+            return city
+        else:
+            return 'Unknown'
+            
+    except Exception:
+        return 'Unknown'
+
 def save_eews_devices(device):
     os.makedirs(os.path.dirname(EEWS_DEVICES_FILE), exist_ok=True)
 
@@ -163,11 +197,14 @@ def save_eews_devices(device):
     else:
         devices = []
 
+    city = get_city_from_coordinates(device.get("latitude"), device.get("longitude"))
+
     device_record = {
         "device_id": device["device_id"],
         "auth_seed": device["auth_seed"],
         "latitude": device.get("latitude"),
         "longitude": device.get("longitude"),
+        "location": city,
         "registered_at": datetime.now().isoformat()
     }
 
@@ -359,11 +396,15 @@ def earthquake_early_warning_system_post_device_id():
                 "server_timestamp": timestamp
             }), 400
 
+        # Get city name from coordinates
+        city = get_city_from_coordinates(latitude, longitude)
+
         device = {
             "device_id": device_id,
             "auth_seed": auth_seed,
             "latitude": latitude,
-            "longitude": longitude
+            "longitude": longitude,
+            "location": city
         }
 
         saved_device = save_eews_devices(device)
