@@ -132,7 +132,7 @@ async function login(event) {
             
             // Redirect after short delay
             setTimeout(() => {
-                window.location.href = "pages/layout.html";
+                window.location.href = "layout.html";
             }, 1500);
         } else {
             showMessage(data.message || 'Invalid credentials. Please try again.', 'error');

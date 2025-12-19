@@ -14,5 +14,12 @@
 
         <div id="mapid"></div>
     </div>
+    
+    <script>
+        // Redirect to login if not loaded inside layout
+        if (window.top === window.self) {
+            window.location.href = 'login.html';
+        }
+    </script>
 </body>
 </html>
