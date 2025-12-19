@@ -4,6 +4,10 @@ import json
 import requests
 import threading
 
+import secrets
+import hashlib
+import jwt
+
 from flask import Flask, jsonify, request
 from datetime import datetime, timedelta
 
@@ -24,10 +28,14 @@ megastream_folder: str = './megastream'
 mem_data_stream:dict = {}
 
 # EEWS variables
+SECRET_KEY = secrets.token_hex(32)
+TOKEN_EXPIRY_MINUTES = 60
+
+USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+EEWS_DEVICES_FILE = os.path.join(os.path.dirname(__file__), "eews_devices.json")
+
 EEWS_DEVICES: dict = {}
 EEWS_STORE: dict = {}
-
-EEWS_DEVICES_FILE = os.path.join(os.path.dirname(__file__), "eews_devices.json")
 
 EEWS_EXPIRY_SECONDS = 10
 
@@ -118,6 +126,12 @@ def get_server_public_ip() -> str:
 # EEWS functions
 def eews_backend():
     pass
+
+def load_eews_users():
+    if not os.path.exists(USERS_FILE):
+        return {}
+    with open(USERS_FILE, "r") as f:
+        return json.load(f)
 
 def cleanup_eews_store():
     now = datetime.now()
@@ -346,6 +360,93 @@ def pipeline():
         #return Response.error(f'Internal server error: {str(e)}', pipeline_id, timestamp)
         
 # EEWS api
+@app.route('/pipeline/eews/login', methods=['POST'])
+def earthquake_early_warning_system_login():
+    timestamp = datetime.now().isoformat()
+
+    try:
+        data = request.get_json()
+        username = data.get("username")
+        password = data.get("password")
+        remember = data.get("remember", False)
+
+        users = load_eews_users()
+
+        if username not in users:
+            return jsonify({
+                "status": "error",
+                "message": "Invalid credentials",
+                "server_timestamp": timestamp
+            }), 401
+
+        user = users[username]
+
+        password_hash = hashlib.md5(password.encode()).hexdigest()
+        if user["password"] != password_hash:
+            return jsonify({
+                "status": "error",
+                "message": "Invalid credentials",
+                "server_timestamp": timestamp
+            }), 401
+
+        expiry_minutes = TOKEN_EXPIRY_MINUTES
+        if remember:
+            expiry_minutes *= 12
+
+        token_payload = {
+            "username": username,
+            "role": user.get("role", "user"),
+            "exp": datetime.utcnow() + timedelta(minutes=expiry_minutes)
+        }
+
+        token = jwt.encode(token_payload, SECRET_KEY, algorithm="HS256")
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+            
+        return jsonify({
+            "success": True,
+            "token": token,
+            "user": {
+                "username": username,
+                "role": user.get("role", "user")
+            },
+            "server_timestamp": timestamp
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Login failed: {str(e)}", "server_timestamp": timestamp}), 500
+        
+@app.route('/pipeline/eews/verify', methods=['GET'])
+def earthquake_early_warning_system_verify_eews_token():
+    timestamp = datetime.now().isoformat()
+    auth = request.headers.get("Authorization")
+
+    if not auth or not auth.startswith("Bearer "):
+        return jsonify({
+            "status": "error",
+            "msg": "Missing token",
+            "server_timestamp": timestamp
+        }), 401
+
+    token = auth.split(" ")[1]
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return jsonify({
+            "status": "success",
+            "user": {
+                "username": payload["username"],
+                "role": payload.get("role", "user")
+            },
+            "server_timestamp": timestamp
+        }), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"status": "error", "msg": "Token expired", "server_timestamp": timestamp}), 401
+
+    except jwt.InvalidTokenError:
+        return jsonify({"status": "error", "msg": "Invalid token", "server_timestamp": timestamp}), 401
+
 @app.route('/pipeline/eews/post', methods=['GET', 'POST'])
 def earthquake_early_warning_system_post():
     timestamp = datetime.now().isoformat()
@@ -475,5 +576,6 @@ cleanup_thread.start()
 
 # Main
 if __name__ == '__main__':
+    app.config['SECRET_KEY'] = SECRET_KEY
     app.run()  # Run the app
-    #app.run(debug=True,port=5001)  # debug in production
+    #app.run(debug=True,port=5001)  # for debug

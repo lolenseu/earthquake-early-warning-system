@@ -41,6 +41,8 @@
     - design of the graph
     - design of the map 
     - desing of the devices
+    - admin authentication
+    -
 
 4. APP
     -

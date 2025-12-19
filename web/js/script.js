@@ -3,6 +3,52 @@ const sidebarToggle = document.getElementById("sidebarToggle");
 const mainContainer = document.getElementById("mainContainer");
 const navItems = document.querySelectorAll(".nav-item");
 
+// Check if user is authenticated
+function checkAuth() {
+    const token = localStorage.getItem('eews_auth_token');
+    const remember = localStorage.getItem('eews_remember');
+    
+    // If no token at all, redirect to login
+    // (remember is NOT a security mechanism)
+    if (!token) {
+        if (!window.location.pathname.includes('login.html')) {
+            window.location.href = 'login.html';
+        }
+        return false;
+    }
+    
+    return true;
+}
+
+// Verify token with server
+async function verifyToken() {
+    const token = localStorage.getItem('eews_auth_token');
+    if (!token) return false;
+    
+    try {
+        const res = await fetch("https://lolenseu.pythonanywhere.com/pipeline/eews/verify", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        });
+        
+        return res.ok;
+    } catch (error) {
+        return false;
+    }
+}
+
+// Redirect to login
+function redirectToLogin() {
+    localStorage.removeItem('eews_auth_token');
+    localStorage.removeItem('eews_remember');
+    if (!window.location.pathname.includes('login.html')) {
+        window.location.href = 'login.html';
+    }
+}
+
 // Reload the page
 function refreshPage() {
     location.reload();
@@ -84,6 +130,11 @@ function hideLoadingSpinner() {
 
 // Load content dynamically
 function loadPage(page) {
+    // Check authentication first
+    if (!checkAuth()) {
+        return;
+    }
+    
     // Show loading spinner
     showLoadingSpinner();
     
@@ -146,6 +197,11 @@ function loadPage(page) {
 // Nav click handler
 navItems.forEach(item => {
     item.addEventListener("click", () => {
+        // Check authentication before navigating
+        if (!checkAuth()) {
+            return;
+        }
+        
         navItems.forEach(i => i.classList.remove("active"));
         item.classList.add("active");
         loadPage(item.dataset.page);
@@ -172,8 +228,38 @@ function loadPageWithActiveState(page) {
 const savedPage = localStorage.getItem('currentPage');
 const defaultPage = "pages/dashboard.html";
 
-// Load the saved page or default page
-loadPageWithActiveState(savedPage || defaultPage);
+// Authentication check on page load
+if (window.location.pathname.includes('login.html')) {
+    // If already logged in and trying to access login page, redirect to dashboard
+    if (checkAuth()) {
+        verifyToken().then(valid => {
+            if (valid) {
+                window.location.href = savedPage || defaultPage;
+            }
+        });
+    }
+} else {
+    // Check authentication for protected pages
+    if (!checkAuth()) {
+        window.location.href = 'login.html';
+    } else {
+        // Verify token if exists
+        const token = localStorage.getItem('eews_auth_token');
+        if (token) {
+            verifyToken().then(isValid => {
+                if (!isValid) {
+                    redirectToLogin();
+                } else {
+                    // Load the saved page or default page
+                    loadPageWithActiveState(savedPage || defaultPage);
+                }
+            });
+        } else {
+            // Load the saved page or default page
+            loadPageWithActiveState(savedPage || defaultPage);
+        }
+    }
+}
 
 // Check mobile on load and resize
 checkMobile();
