@@ -42,6 +42,8 @@
     - design of the map 
     - desing of the devices
     - admin authentication
+    - admin profile
+    - setting and logout
     -
 
 4. APP
@@ -55,4 +57,5 @@
     - v0.4 - dashboard
     - v0.5 - iot map
     - v0.6 - iot devices
-    -
+    - v0.7 - admin authentication
+    - v0.8 -

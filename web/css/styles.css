@@ -21,102 +21,92 @@ body {
 
 /* Sidebar */
 .sidebar {
+    width: 270px;
     background: linear-gradient(135deg, #4a61c7 0%, #6b3fa0 100%);
-    width: 280px;
-    border-radius: 20px;
-    padding: 15px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    border-radius: 18px;
+    padding: 18px 14px;
     display: flex;
     flex-direction: column;
-    position: relative;
-    transition: all 0.4s ease;
+    transition: width 0.35s ease, padding 0.35s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    color: #ffffff;
 }
 
-/* Sidebar collapsed */
 .sidebar.collapsed {
-    width: 90px;
-    padding: 15px 12px;
+    width: 85px;
+    padding: 18px 10px;
 }
 
 /* Sidebar header */
 .sidebar-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 35px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
-    transition: all 0.3s ease;
-}
-
-/* Logo */
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: all 0.3s ease;
+    gap: 14px;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .logo h3 {
-    color: #fff;
-    font-weight: 700;
-    font-size: 20px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
 }
 
 .sidebar.collapsed .logo h3 {
     display: none;
 }
 
-/* Icons */
-.logo .material-icons {
-    font-size: 36px ;
-    color: #fff;
-}
-
 /* Sidebar toggle */
 .sidebar-toggle {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.18);
     border: none;
-    color: #fff;
-    border-radius: 12px;
-    padding: 10px;
-    margin: 13px;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 8px;
     cursor: pointer;
-    text-align: center;
-    transition: all 0.3s ease;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.25s ease;
 }
 
 .sidebar-toggle:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.28);
 }
 
-/* Navigation items */
+.sidebar.collapsed .sidebar-header {
+    justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-header {
+    gap: 0;
+}
+
+/* Navigation */
 .sidebar-nav ul {
     list-style: none;
     padding-top: 10px;
 }
 
 .sidebar-nav li {
-    margin-bottom: 12px;
-    padding: 14px 18px;
+    margin-bottom: 10px;
+    padding: 12px 16px;
     border-radius: 12px;
-    color: #fff;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 15px;
-    transition: all 0.3s ease;
-    position: relative;
+    gap: 16px;
+    color: #ffffff;
+    transition: background 0.25s ease;
 }
 
 .sidebar.collapsed .sidebar-nav li {
     justify-content: center;
-    padding: 14px 8px;
-}
-
-.sidebar-nav li span:last-child {
-    transition: opacity 0.3s ease;
+    padding: 12px 8px;
 }
 
 .sidebar.collapsed .sidebar-nav li span:last-child {
@@ -124,37 +114,111 @@ body {
 }
 
 .sidebar-nav li:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateX(5px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar.collapsed .sidebar-nav li:hover {
-    transform: none;
-    box-shadow: none;
+    background: rgba(255, 255, 255, 0.22);
 }
 
 .sidebar-nav li.active {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.32);
 }
 
-.sidebar.collapsed .sidebar-nav li.active {
-    border-left: none;
-    border-radius: 12px;
-}
-
-/* Navigation icons */
 .sidebar-nav li .material-icons {
     font-size: 22px;
+    color: #ffffff;
 }
 
-/* Smooth icon transitions */
-.sidebar-nav li .material-icons {
-    transition: transform 0.3s ease;
+/* User section */
+.sidebar-user {
+    padding: 14px;
+    margin-top: auto;
+    margin-bottom: 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.22);
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.sidebar-nav li:hover .material-icons {
-    transform: scale(1.2);
+.sidebar.collapsed .sidebar-user {
+    justify-content: center;
+    padding: 5px;
+}
+
+.sidebar.collapsed .sidebar-user .user-info {
+    display: none;
+}
+
+.user-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #ffffff;
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: #ffffff;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.user-role {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+    margin-top: 0;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.sidebar-footer ul {
+    list-style: none;
+}
+
+.sidebar-footer .sidebar-action-li {
+    margin-bottom: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: #ffffff;
+    transition: background 0.25s ease;
+}
+
+.sidebar.collapsed .sidebar-footer .sidebar-action-li {
+    justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-footer .sidebar-action-li span:last-child {
+    display: none;
+}
+
+.sidebar-footer .sidebar-action-li:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.sidebar-footer .logout-li {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.sidebar-footer .logout-li:hover {
+    background: rgba(255, 255, 255, 0.32);
 }
 
 /* Main container */
@@ -172,10 +236,10 @@ body {
 /* Refresh button */
 .refresh-btn {
     margin-left: 10px;
-    padding: 5px 10px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
     background: #007bff;
     color: white;
     cursor: pointer;
@@ -218,7 +282,7 @@ body {
         top: 0;
         left: 0;
         border-radius: 0;
-        background: linear-gradient(135deg, #4a61c7, #6b3fa0);
+        background: white;
         z-index: 200;
     }
 

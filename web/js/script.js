@@ -49,6 +49,16 @@ function redirectToLogin() {
     }
 }
 
+// Logout function
+function logoutUser() {
+    // Clear authentication data
+    localStorage.removeItem('eews_auth_token');
+    localStorage.removeItem('eews_remember');
+    
+    // Redirect to login page
+    window.location.href = 'login.html';
+}
+
 // Reload the page
 function refreshPage() {
     location.reload();
@@ -129,69 +139,40 @@ function hideLoadingSpinner() {
 }
 
 // Load content dynamically
-function loadPage(page) {
+async function loadPage(page) {
     // Check authentication first
-    if (!checkAuth()) {
-        return;
-    }
-    
+    if (!checkAuth()) return;
+
     // Show loading spinner
     showLoadingSpinner();
-    
-    fetch(page)
-        .then(res => res.text())
-        .then(html => {
-            mainContainer.innerHTML = html;
-            // Hide loading spinner
-            hideLoadingSpinner();
-            
-            // Save current page to localStorage
-            localStorage.setItem('currentPage', page);
-            
-            // Initialize dashboard if dashboard page is loaded
-            if (page.includes('dashboard.html')) {
-                console.log('Dashboard page loaded, initializing...');
-                // Wait for DOM to be ready and init dashboard
-                setTimeout(() => {
-                    if (typeof initDashboard === 'function') {
-                        initDashboard();
-                    } else {
-                        console.error('initDashboard function not found');
-                    }
-                }, 200);
-            }
 
-            // Initialize map if map page is loaded
-            if (page.includes('map.html')) {
-                console.log('Map page loaded, initializing...');
-                // Wait for DOM to be ready and init map
-                setTimeout(() => {
-                    if (typeof initMap === 'function') {
-                        initMap();
-                    } else {
-                        console.error('initMap function not found');
-                    }
-                }, 200);
-            }
+    try {
+        const res = await fetch(page);
+        const html = await res.text();
+        mainContainer.innerHTML = html;
 
-            // Initialize devices if devices page is loaded
-            if (page.includes('devices.html')) {
-                console.log('Devices page loaded, initializing...');
-                // Wait for DOM to be ready and init devices
-                setTimeout(() => {
-                    if (typeof initDevices === 'function') {
-                        initDevices();
-                    } else {
-                        console.error('initDevices function not found');
-                    }
-                }, 200);
-            }
-        })
-        .catch(err => {
-            mainContainer.innerHTML = `<p style="color:red;">Failed to load ${page}</p>`;
-            // Hide loading spinner
-            hideLoadingSpinner();
-        });
+        // Save current page to localStorage
+        localStorage.setItem('currentPage', page);
+
+        // Wait for the next animation frame to ensure DOM is painted
+        await new Promise(requestAnimationFrame);
+
+        // Initialize page-specific scripts
+        if (page.includes('dashboard.html') && typeof initDashboard === 'function') {
+            await initDashboard(); // if initDashboard is async, otherwise just call it
+        } else if (page.includes('map.html') && typeof initMap === 'function') {
+            await initMap();
+        } else if (page.includes('devices.html') && typeof initDevices === 'function') {
+            await initDevices();
+        }
+
+    } catch (err) {
+        mainContainer.innerHTML = `<p style="color:red;">Failed to load ${page}</p>`;
+        console.error(err);
+    } finally {
+        // Always hide spinner after everything is loaded and initialized
+        hideLoadingSpinner();
+    }
 }
 
 // Nav click handler
@@ -264,3 +245,18 @@ if (window.location.pathname.includes('login.html')) {
 // Check mobile on load and resize
 checkMobile();
 window.addEventListener('resize', checkMobile);
+
+// Logout button event listener (now li element)
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', logoutUser);
+}
+
+// Settings button event listener (now li element)
+const settingsBtn = document.getElementById('settingsBtn');
+if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+        alert('Settings feature coming soon!');
+        // Future implementation: navigate to settings page or open modal
+    });
+}

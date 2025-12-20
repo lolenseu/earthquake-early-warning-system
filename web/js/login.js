@@ -93,7 +93,6 @@ async function login(event) {
     // Disable button and show loading state
     loginBtn.disabled = true;
     loginBtn.innerHTML = `
-        <span class="material-icons" style="margin-right: 8px; animation: spin 1s linear infinite;">refresh</span>
         Logging in...
     `;
     
