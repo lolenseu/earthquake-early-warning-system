@@ -95,9 +95,7 @@ Designed to be lightweight and responsive.
 # Example API Payload
 
 ```
-POST /v1/devices/<device_id>/measurements
-Content-Type: application/json
-Authorization: Bearer <TOKEN>
+POST /pipeline/eews/devices>
 
 {
   "device_id": "R1-001",
@@ -110,9 +108,9 @@ Authorization: Bearer <TOKEN>
 }
 ```
 
-Example alert event:
-
 ```
+GET /pipeline/eews/warning
+
 {
   "type": "earthquake_alert",
   "device_id": "R1-001",

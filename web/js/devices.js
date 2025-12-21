@@ -5,7 +5,7 @@ let lastUpdated;
 // Fetch registered devices list
 async function fetchDevicesList() {
     try {
-        const res = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/v1/devices_list');
+        const res = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/devices_list');
         const data = await res.json();
         return data.devices || [];
     } catch (e) {
@@ -16,7 +16,7 @@ async function fetchDevicesList() {
 // Fetch live device data
 async function fetchLiveDevices() {
     try {
-        const res = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/v1/devices');
+        const res = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/devices');
         const data = await res.json();
         return data.devices || {};
     } catch (e) {

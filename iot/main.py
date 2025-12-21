@@ -137,7 +137,7 @@ def fetch_data():
 def post_data(data):
     """Post data to server using URL-encoded form instead of JSON."""
     
-    url = f"{API_URL}/eews/post"
+    url = f"{API_URL}/post"
     headers = {"Content-Type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
     
     try:
@@ -153,7 +153,7 @@ def post_data(data):
 def post_storage_data(data):
     """Post storage data to API using URL-encoded form."""
     
-    url = f"{API_URL_STORAGE}/eews/post_device_id"
+    url = f"{API_URL_STORAGE}/post_device_id"
     headers = {"Content-Type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
     
     try:

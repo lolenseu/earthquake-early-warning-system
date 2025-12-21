@@ -31,6 +31,7 @@
     - handle devices
     - auto clear inactive devices
     - coordinate locator
+    - warning response
     -
 
 3. WEB PLATFORM

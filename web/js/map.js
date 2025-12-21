@@ -7,7 +7,7 @@ function initMap() {
     // Fetch device locations (registered devices)
     async function fetchDeviceLocations() {
         try {
-            const response = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/v1/devices_list');
+            const response = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/devices_list');
             const data = await response.json();
 
             // Save device coordinates and locations
@@ -63,7 +63,7 @@ function initMap() {
     // Fetch device statuses (online/offline/earthquake)
     async function updateDeviceStatus() {
         try {
-            const response = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/v1/devices');
+            const response = await fetch('https://lolenseu.pythonanywhere.com/pipeline/eews/devices');
             const data = await response.json();
             const onlineDevices = data.devices || {};
 

@@ -28,14 +28,19 @@ megastream_folder: str = './megastream'
 mem_data_stream:dict = {}
 
 # EEWS variables
-SECRET_KEY = secrets.token_hex(32)
-TOKEN_EXPIRY_MINUTES = 60
-
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
 EEWS_DEVICES_FILE = os.path.join(os.path.dirname(__file__), "eews_devices.json")
 
 EEWS_DEVICES: dict = {}
 EEWS_STORE: dict = {}
+
+# Security constants
+SECRET_KEY = secrets.token_hex(32)
+TOKEN_EXPIRY_MINUTES = 60
+
+# EEWS constants
+G_FORCE_THRESHOLD = 1.35
+MIN_DEVICES_FOR_WARNING = 5
 
 EEWS_EXPIRY_SECONDS = 10
 
@@ -124,82 +129,11 @@ def get_server_public_ip() -> str:
         return 'Unable to get IP'
 
 # EEWS functions
-def eews_backend():
-    pass
-
 def load_eews_users():
     if not os.path.exists(USERS_FILE):
         return {}
     with open(USERS_FILE, "r") as f:
         return json.load(f)
-
-def cleanup_eews_store():
-    now = datetime.now()
-    expired_devices = []
-
-    for device_id, device_data in list(EEWS_STORE.items()):
-        ts_str = device_data.get("server_timestamp")
-        if not ts_str:
-            expired_devices.append(device_id)
-            continue
-        try:
-            ts = datetime.fromisoformat(ts_str)
-            if now - ts > timedelta(seconds=EEWS_EXPIRY_SECONDS):
-                expired_devices.append(device_id)
-        except Exception:
-            expired_devices.append(device_id)
-
-    for device_id in expired_devices:
-        EEWS_STORE.pop(device_id, None)
-        
-def cleanup_loop():
-    while True:
-        cleanup_eews_store()
-        time.sleep(1)
-        
-def load_eews_devices():
-    if os.path.exists(EEWS_DEVICES_FILE):
-        try:
-            with open(EEWS_DEVICES_FILE, "r") as f:
-                data = json.load(f)
-                return data.get("devices", [])
-        except:
-            return []
-    return []
-
-def get_city_from_coordinates(latitude, longitude):
-    try:
-        url = f"https://nominatim.openstreetmap.org/reverse"
-        params = {
-            'format': 'json',
-            'lat': latitude,
-            'lon': longitude,
-            'addressdetails': 1,
-            'accept-language': 'en'
-        }
-        
-        response = requests.get(url, params=params, headers={
-            'User-Agent': 'EEWS-Monitor/1.0'
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            address = data.get('address', {})
-            
-            city = (address.get('city') or 
-                   address.get('town') or 
-                   address.get('village') or 
-                   address.get('hamlet') or 
-                   address.get('municipality') or
-                   address.get('state') or
-                   'Unknown')
-            
-            return city
-        else:
-            return 'Unknown'
-            
-    except Exception:
-        return 'Unknown'
 
 def save_eews_devices(device):
     os.makedirs(os.path.dirname(EEWS_DEVICES_FILE), exist_ok=True)
@@ -236,6 +170,118 @@ def save_eews_devices(device):
         json.dump({"devices": devices, "updated_at": datetime.now().isoformat()}, f, indent=2)
 
     return device_record
+
+def load_eews_devices():
+    if os.path.exists(EEWS_DEVICES_FILE):
+        try:
+            with open(EEWS_DEVICES_FILE, "r") as f:
+                data = json.load(f)
+                return data.get("devices", [])
+        except:
+            return []
+    return []
+
+def cleanup_eews_store():
+    now = datetime.now()
+    expired_devices = []
+
+    for device_id, device_data in list(EEWS_STORE.items()):
+        ts_str = device_data.get("server_timestamp")
+        if not ts_str:
+            expired_devices.append(device_id)
+            continue
+        try:
+            ts = datetime.fromisoformat(ts_str)
+            if now - ts > timedelta(seconds=EEWS_EXPIRY_SECONDS):
+                expired_devices.append(device_id)
+        except Exception:
+            expired_devices.append(device_id)
+
+    for device_id in expired_devices:
+        EEWS_STORE.pop(device_id, None)
+        
+def cleanup_loop():
+    while True:
+        cleanup_eews_store()
+        time.sleep(1)
+
+def get_city_from_coordinates(latitude, longitude):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse"
+        params = {
+            'format': 'json',
+            'lat': latitude,
+            'lon': longitude,
+            'addressdetails': 1,
+            'accept-language': 'en'
+        }
+        
+        response = requests.get(url, params=params, headers={
+            'User-Agent': 'EEWS-Monitor/1.0'
+        })
+        
+        if response.status_code == 200:
+            data = response.json()
+            address = data.get('address', {})
+            
+            city = (address.get('city') or 
+                   address.get('town') or 
+                   address.get('village') or 
+                   address.get('hamlet') or 
+                   address.get('municipality') or
+                   address.get('state') or
+                   'Unknown')
+            
+            return city
+        else:
+            return 'Unknown'
+            
+    except Exception:
+        return 'Unknown'
+
+def get_device_location_map():
+    devices = load_eews_devices()
+    return {d["device_id"]: d.get("location", "Unknown") for d in devices}
+    
+def detect_earthquake_warning():
+    cleanup_eews_store()
+
+    device_location_map = get_device_location_map()
+    location_hits = {}
+
+    for device_id, data in EEWS_STORE.items():
+        g_force = data.get("g_force")
+        if g_force is None or g_force <= G_FORCE_THRESHOLD:
+            continue
+
+        location = device_location_map.get(device_id)
+        if not location:
+            continue
+
+        if location not in location_hits:
+            location_hits[location] = []
+
+        location_hits[location].append({
+            "device_id": device_id,
+            "g_force": g_force,
+            "server_timestamp": data.get("server_timestamp")
+        })
+
+    # Check if any location meets warning condition
+    for location, devices in location_hits.items():
+        if len(devices) >= MIN_DEVICES_FOR_WARNING:
+            return {
+                "warning": True,
+                "location": location,
+                "device_count": len(devices),
+                "devices": devices,
+                "message": f"Earthquake detected in {location}"
+            }
+
+    return {
+        "warning": False,
+        "message": "No earthquake detected"
+    }
 
 # Routes
 @app.route('/pipeline', methods=['GET', 'POST'])
@@ -360,7 +406,7 @@ def pipeline():
         #return Response.error(f'Internal server error: {str(e)}', pipeline_id, timestamp)
         
 # EEWS api
-@app.route('/pipeline/eews/login', methods=['POST'])
+@app.route('/pipeline/eews/login', methods=['POST', 'GET'])
 def earthquake_early_warning_system_login():
     timestamp = datetime.now().isoformat()
 
@@ -414,73 +460,12 @@ def earthquake_early_warning_system_login():
         }), 200
 
     except Exception as e:
-        return jsonify({"status": "error", "message": f"Login failed: {str(e)}", "server_timestamp": timestamp}), 500
-        
-@app.route('/pipeline/eews/verify', methods=['GET'])
-def earthquake_early_warning_system_verify_eews_token():
-    timestamp = datetime.now().isoformat()
-    auth = request.headers.get("Authorization")
-
-    if not auth or not auth.startswith("Bearer "):
-        return jsonify({
-            "status": "error",
-            "msg": "Missing token",
+        return jsonify({"status": "error",
+            "message": f"Login failed: {str(e)}",
             "server_timestamp": timestamp
-        }), 401
-
-    token = auth.split(" ")[1]
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return jsonify({
-            "status": "success",
-            "user": {
-                "username": payload["username"],
-                "role": payload.get("role", "user")
-            },
-            "server_timestamp": timestamp
-        }), 200
-
-    except jwt.ExpiredSignatureError:
-        return jsonify({"status": "error", "msg": "Token expired", "server_timestamp": timestamp}), 401
-
-    except jwt.InvalidTokenError:
-        return jsonify({"status": "error", "msg": "Invalid token", "server_timestamp": timestamp}), 401
-
-@app.route('/pipeline/eews/post', methods=['GET', 'POST'])
-def earthquake_early_warning_system_post():
-    timestamp = datetime.now().isoformat()
+        }), 500
     
-    try:
-        device_id = request.values.get('device_id')
-        x_axis = request.values.get('x_axis', type=float)
-        y_axis = request.values.get('y_axis', type=float)
-        z_axis = request.values.get('z_axis', type=float)
-        g_force = request.values.get('g_force', type=float)
-        device_timestamp = request.values.get('device_timestamp')
-        
-        if not device_id:
-            return jsonify({"status": "error", "msg": "device_id missing"}), 400
-        
-        EEWS_STORE[device_id] = {
-            "device_id": device_id,
-            "x_axis": x_axis,
-            "y_axis": y_axis,
-            "z_axis": z_axis,
-            "g_force": g_force,
-            "device_timestamp": device_timestamp,
-            "server_timestamp": timestamp
-        }
-        
-        return jsonify({
-            "status": "success",
-            "stored": EEWS_STORE[device_id]
-        }), 200 
-        
-    except Exception as e:
-        return jsonify({"status": "error", "msg": str(e),"server_timestamp": timestamp}), 500
- 
-@app.route('/pipeline/eews/post_device_id', methods=['POST'])
+@app.route('/pipeline/eews/post_device_id', methods=['POST', 'GET'])
 def earthquake_early_warning_system_post_device_id():
     timestamp = datetime.now().isoformat()
 
@@ -517,9 +502,84 @@ def earthquake_early_warning_system_post_device_id():
         }), 200
 
     except Exception as e:
-        return jsonify({"status": "error", "msg": f"Invalid request: {str(e)}", "server_timestamp": timestamp}), 400
-  
-@app.route('/pipeline/eews/fetch', methods=['GET', 'POST'])
+        return jsonify({"status": "error",
+            "msg": f"Invalid request: {str(e)}",
+            "server_timestamp": timestamp
+        }), 400
+    
+@app.route('/pipeline/eews/post', methods=['POST', 'GET'])
+def earthquake_early_warning_system_post():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        device_id = request.values.get('device_id')
+        x_axis = request.values.get('x_axis', type=float)
+        y_axis = request.values.get('y_axis', type=float)
+        z_axis = request.values.get('z_axis', type=float)
+        g_force = request.values.get('g_force', type=float)
+        device_timestamp = request.values.get('device_timestamp')
+        
+        if not device_id:
+            return jsonify({"status": "error", "msg": "device_id missing"}), 400
+        
+        EEWS_STORE[device_id] = {
+            "device_id": device_id,
+            "x_axis": x_axis,
+            "y_axis": y_axis,
+            "z_axis": z_axis,
+            "g_force": g_force,
+            "device_timestamp": device_timestamp,
+            "server_timestamp": timestamp
+        }
+        
+        return jsonify({
+            "status": "success",
+            "stored": EEWS_STORE[device_id]
+        }), 200 
+        
+    except Exception as e:
+        return jsonify({"status": "error",
+            "msg": str(e),"server_timestamp": timestamp
+        }), 500
+    
+@app.route('/pipeline/eews/verify', methods=['GET'])
+def earthquake_early_warning_system_verify_eews_token():
+    timestamp = datetime.now().isoformat()
+    auth = request.headers.get("Authorization")
+
+    if not auth or not auth.startswith("Bearer "):
+        return jsonify({
+            "status": "error",
+            "msg": "Missing token",
+            "server_timestamp": timestamp
+        }), 401
+
+    token = auth.split(" ")[1]
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return jsonify({
+            "status": "success",
+            "user": {
+                "username": payload["username"],
+                "role": payload.get("role", "user")
+            },
+            "server_timestamp": timestamp
+        }), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"status": "error",
+            "msg": "Token expired",
+            "server_timestamp": timestamp
+        }), 401
+
+    except jwt.InvalidTokenError:
+        return jsonify({"status": "error",
+            "msg": "Invalid token",
+            "server_timestamp": timestamp
+        }), 401
+    
+@app.route('/pipeline/eews/fetch', methods=['GET'])
 def  earthquake_early_warning_system_fetch():
     timestamp = datetime.now().isoformat()
     
@@ -530,24 +590,12 @@ def  earthquake_early_warning_system_fetch():
         }), 200
         
     except Exception as e:
-        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
+        return jsonify({"status": "error",
+            "msg": str(e),
+            "server_timestamp": timestamp
+        }), 500
     
-@app.route('/pipeline/eews/v1/devices', methods=['GET', 'POST'])
-def earthquake_early_warning_system_devices():
-    timestamp = datetime.now().isoformat()
-    
-    try:
-        cleanup_eews_store()
-        
-        return jsonify({
-            "status": "success",
-            "devices": EEWS_STORE
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
-      
-@app.route('/pipeline/eews/v1/devices_list', methods=['GET', 'POST'])
+@app.route('/pipeline/eews/devices_list', methods=['GET'])
 def earthquake_early_warning_system_devices_list():
     timestamp = datetime.now().isoformat()
     
@@ -562,7 +610,48 @@ def earthquake_early_warning_system_devices_list():
         }), 200
 
     except Exception as e:
-        return jsonify({"status": "error", "msg": str(e), "server_timestamp": timestamp}), 500
+        return jsonify({"status": "error",
+            "msg": str(e),
+            "server_timestamp": timestamp
+        }), 500
+    
+@app.route('/pipeline/eews/devices', methods=['GET'])
+def earthquake_early_warning_system_devices():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        cleanup_eews_store()
+        
+        return jsonify({
+            "status": "success",
+            "devices": EEWS_STORE
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error",
+            "msg": str(e),
+            "server_timestamp": timestamp
+        }),500
+    
+@app.route('/pipeline/eews/warning', methods=['GET'])
+def earthquake_warning_check():
+    timestamp = datetime.now().isoformat()
+
+    try:
+        result = detect_earthquake_warning()
+
+        return jsonify({
+            "status": "success",
+            "server_timestamp": timestamp,
+            **result
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "msg": str(e),
+            "server_timestamp": timestamp
+        }), 500
     
 # Error Handling
 @app.errorhandler(404)

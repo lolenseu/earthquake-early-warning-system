@@ -5,9 +5,9 @@ import time
 import random
 import requests
 
-API_URL_STORAGE = "https://lolenseu.pythonanywhere.com/pipeline"
-API_URL = "https://lolenseu.pythonanywhere.com/pipeline"
-#API_URL = "https://eews-api.vercel.app/pipeline"
+API_URL_STORAGE = "https://lolenseu.pythonanywhere.com/pipeline/eews"
+API_URL = "https://lolenseu.pythonanywhere.com/pipeline/eews"
+#API_URL = "https://eews-api.vercel.app/pipeline/eews"
 
 DEVICES = [
     {"id": "demo-r0-001", "auth_seed": "12345678", "latitude": 17.592374, "longitude": 120.400231},
@@ -71,7 +71,7 @@ class DeviceSimulator:
         return payload_str
 
     def post_data(self, data):
-        url = f"{API_URL}/eews/post"
+        url = f"{API_URL}/post"
         payload_str = self.build_payload(data)
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -90,7 +90,7 @@ class DeviceSimulator:
             return False
 
     def register_device(self):
-        url = f"{API_URL_STORAGE}/eews/post_device_id"
+        url = f"{API_URL_STORAGE}/post_device_id"
         payload_dict = {
             "device_id": self.device_config["id"],
             "auth_seed": self.device_config.get("auth_seed", ""),
