@@ -48,7 +48,7 @@
     -
 
 4. APP
-    -
+    - basic app structure
 
 
 5. version
