@@ -240,13 +240,13 @@ body {
     font-size: 14px;
     border: 1px solid #ddd;
     border-radius: 10px;
-    background: #007bff;
+    background: #4facfe;
     color: white;
     cursor: pointer;
 }
 
 .refresh-btn:hover {
-    background: #0056b3;
+    background: #4391d6;
 }
 
 /* Mobile improvements */

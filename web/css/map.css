@@ -1,32 +1,41 @@
-/* Map Page Styles */
+/* IoT Map Page Styles */
 
-/* Map header */
-.map-header {
+/* IoT Map container */
+.iot-map-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 85vh;
+}
+
+/* IoT Map header */
+.iot-map-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
-.map-header h1 {
+.iot-map-header h1 {
     color: #333;
     font-size: 28px;
     font-weight: 600;
 }
 
-.map-header .last-updated {
+.iot-map-header .last-updated {
     color: #666;
     font-size: 14px;
 }
 
-/* Map container */
-#mapid {
+/* IoT Map container */
+#iotmapid {
     flex: 1;
-    height: calc(85vh - 80px);
+    height: 60vh;
     border-radius: 15px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
     overflow: hidden;
+    background: #e0e0e0;
+    border: 2px dashed #999;
 }
 
 /* Marker popups */
@@ -52,8 +61,8 @@
     box-shadow: 0 8px 20px rgba(0,0,0,0.25);
 }
 
-/* Map card for info (optional future stats) */
-.map-info-card {
+/* IoT Map card for info (optional future stats) */
+.iot-map-info-card {
     position: absolute;
     top: 100px;
     right: 20px;
@@ -67,28 +76,32 @@
     transition: all 0.3s ease;
 }
 
-.map-info-card h2 {
+.iot-map-info-card h2 {
     margin: 0 0 10px 0;
     font-size: 18px;
     font-weight: 600;
 }
 
-.map-info-card p {
+.iot-map-info-card p {
     margin: 5px 0;
     font-size: 14px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .map-header h1 {
+    .iot-map-container {
+        padding: 15px;
+    }
+    
+    .iot-map-header h1 {
         font-size: 22px;
     }
 
-    #mapid {
-        height: calc(100vh - 70px);
+    #iotmapid {
+        height: 50vh;
     }
 
-    .map-info-card {
+    .iot-map-info-card {
         top: 80px;
         right: 10px;
         padding: 15px;

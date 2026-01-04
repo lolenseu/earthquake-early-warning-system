@@ -45,6 +45,7 @@
     - admin authentication
     - admin profile
     - setting and logout
+    - design of the reports
     -
 
 4. APP
@@ -59,4 +60,4 @@
     - v0.5 - iot map
     - v0.6 - iot devices
     - v0.7 - admin authentication
-    - v0.8 -
+    - v0.8 - mobile app

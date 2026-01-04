@@ -9,6 +9,7 @@ async function fetchDevicesList() {
         const data = await res.json();
         return data.devices || [];
     } catch (e) {
+        console.error('Error fetching devices list:', e);
         return [];
     }
 }
@@ -20,6 +21,7 @@ async function fetchLiveDevices() {
         const data = await res.json();
         return data.devices || {};
     } catch (e) {
+        console.error('Error fetching live devices:', e);
         return {};
     }
 }
@@ -34,20 +36,18 @@ function createDeviceCard(deviceInfo, liveDevice) {
     let gForceText = '0.0';
     let statusSign = 'Normal';
     let statusSignClass = 'status-sign-normal';
+    let iconColor = '#007bff'; // Default blue for offline
     
     if (liveDevice) {
         statusClass = 'status-online';
         statusText = 'Online';
-    } else {
-        statusClass = 'status-offline';
-        statusText = 'Offline';
-    }
-
-    if (liveDevice) {
+        iconColor = '#28a745'; // Green for online
+        
         gForceText = `${gForce.toFixed(1)}`;
         if (gForce > 1.35) {
             statusSign = 'Earthquake';
             statusSignClass = 'status-sign-warning';
+            iconColor = '#dc3545'; // Red for earthquake
         } else {
             statusSign = 'Normal';
             statusSignClass = 'status-sign-normal';
@@ -55,13 +55,12 @@ function createDeviceCard(deviceInfo, liveDevice) {
     }
 
     card.innerHTML = `
-        <div class="device-icon">
+        <div class="device-icon" style="background-color: ${iconColor}">
             <span class="material-icons">router</span>
         </div>
         <div class="device-info">
             <div class="device-left">
                 <div class="device-detail">
-                    <span class="status-dot ${statusClass}"></span>
                     <span class="value">${statusText}</span>
                 </div>
                 <div class="device-detail">

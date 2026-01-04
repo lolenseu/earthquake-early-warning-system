@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports</title>
+</head>
+<body>
+
+    <div class="report-container">
+        <div class="report-header">
+            <h1>Reports</h1>
+            <div class="last-updated">Last updated: <span id="lastUpdated"></span>
+                    <button onclick="refreshPage()" class="refresh-btn">⟳ Refresh</button>
+            </div>
+        </div>
+
+        <div class="report-filters">
+            <button class="active" data-range="day">Last Day</button>
+            <button data-range="week">Last Week</button>
+            <button data-range="month">Last Month</button>
+        </div>
+
+        <div id="reportmapid">
+            <div style="text-align: center; padding: 20px; color: #666; font-size: 18px;">
+                Map should load here...
+            </div>
+        </div>
+
+        <div id="quakeList"></div>
+    </div>
+
+    <script>
+        // If loaded outside layout
+        if (window.top === window.self) {
+            window.location.href = './login.html';
+        }
+    </script>
+
+</body>
+</html>

@@ -149,6 +149,10 @@ async function loadPage(page) {
     try {
         const res = await fetch(page);
         const html = await res.text();
+        
+        // Debug: Check if HTML was loaded
+        console.log('Loaded HTML for', page, ':', html.substring(0, 200) + '...');
+        
         mainContainer.innerHTML = html;
 
         // Save current page to localStorage
@@ -156,14 +160,37 @@ async function loadPage(page) {
 
         // Wait for the next animation frame to ensure DOM is painted
         await new Promise(requestAnimationFrame);
+        
+        // Wait a bit more to ensure all elements are properly attached to DOM
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Debug: Check if containers exist
+        console.log('Checking containers after load...');
+        console.log('iotmapid exists:', !!document.getElementById('iotmapid'));
+        console.log('reportmapid exists:', !!document.getElementById('reportmapid'));
+        console.log('quakeList exists:', !!document.getElementById('quakeList'));
+        console.log('lastUpdated exists:', !!document.getElementById('lastUpdated'));
+
+        // Debug: Check if functions are available
+        console.log('Function availability:');
+        console.log('initIoTMap exists:', typeof initIoTMap);
+        console.log('initReportMap exists:', typeof initReportMap);
+        console.log('initDashboard exists:', typeof initDashboard);
+        console.log('initDevices exists:', typeof initDevices);
 
         // Initialize page-specific scripts
         if (page.includes('dashboard.html') && typeof initDashboard === 'function') {
+            console.log('Calling initDashboard...');
             await initDashboard(); // if initDashboard is async, otherwise just call it
-        } else if (page.includes('map.html') && typeof initMap === 'function') {
-            await initMap();
+        } else if (page.includes('map.html') && typeof initIoTMap === 'function') {
+            console.log('Initializing IoT Map...');
+            await initIoTMap();
         } else if (page.includes('devices.html') && typeof initDevices === 'function') {
+            console.log('Calling initDevices...');
             await initDevices();
+        } else if (page.includes('reports.html') && typeof initReportMap === 'function') {
+            console.log('Initializing Report Map...');
+            await initReportMap();
         }
 
     } catch (err) {

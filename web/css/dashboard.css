@@ -132,61 +132,51 @@
     font-weight: 600;
 }
 
-/* Buttons and Dropdown - Unified Styles */
+/* Buttons and Dropdown - Updated with reportmap.css styling */
 .chart-controls button,
 .date-range-select {
     margin: 5px;
-    padding: 5px 10px;
-    border: 2px solid #212121;
-    border-radius: 15px;
-    background: transparent;
-    color: #212121;
-    font-size: 17px;
-    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: none;
+    background: #e0e0e0;
+    font-weight: 600;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.chart-controls button::before,
-.date-range-select::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0;
-    height: 100%;
-    border-radius: 15px;
-    background-color: purple;
-    z-index: -1;
-    transition: width 0.3s ease;
+    transition: 0.3s;
+    color: #333;
 }
 
 .chart-controls button:hover,
-.chart-controls button.active,
-.date-range-select:hover,
-.date-range-select.active {
-    color: #667eea;
+.date-range-select:hover {
+    background: #4facfe;
+    color: white;
 }
 
-.chart-controls button:hover::before,
-.chart-controls button.active::before,
-.date-range-select:hover::before,
-.date-range-select.active::before {
-    width: 100%;
+.chart-controls button.active,
+.date-range-select.active {
+    background: #4facfe;
+    color: white;
 }
 
 /* Dropdown options */
+.date-range-select {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
 .date-range-select option {
-    color: #212121;
-    background: rgb(255, 255, 255);
+    color: #333;
+    background: #fff;
 }
 
 /* Chart container */
 .chart-container {
     position: relative;
-    height: 400px;
+    height: 480px;
 }
 
 .date-range-controls {

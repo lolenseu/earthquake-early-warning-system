@@ -80,25 +80,6 @@
     font-weight: 500;
 }
 
-.status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.status-online {
-    background: #28a745;
-}
-
-.status-offline {
-    background: #007bff;
-}
-
-.status-warning {
-    background: #dc3545;
-}
-
 .status-sign {
     font-size: 12px;
     font-weight: 600;
