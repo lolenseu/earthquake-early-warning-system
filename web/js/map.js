@@ -93,7 +93,7 @@ function initIoTMap() {
 
             // Start updating device statuses
             updateDeviceStatus();
-            setInterval(updateDeviceStatus, 1000); // refresh every 1 sec
+            createInterval(updateDeviceStatus, 1000); // refresh every 1 sec
 
         } catch (err) {
             console.error("Error fetching device locations:", err);

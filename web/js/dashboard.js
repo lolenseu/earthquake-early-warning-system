@@ -432,8 +432,8 @@ function initDashboard() {
         }
     });
 
-    // Refresh live dashboard every 1 second
-    setInterval(refreshLiveDashboard, 1000);
+    // Refresh live dashboard every 1 second - use createInterval to track it
+    createInterval(refreshLiveDashboard, 1000);
 }
 
 // Only export the initDashboard function for external use

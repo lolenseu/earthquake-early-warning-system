@@ -3,6 +3,23 @@ const sidebarToggle = document.getElementById("sidebarToggle");
 const mainContainer = document.getElementById("mainContainer");
 const navItems = document.querySelectorAll(".nav-item");
 
+// Track running intervals to clear them when changing pages
+const runningIntervals = [];
+
+// Clear all running intervals from the previous page
+function clearAllIntervals() {
+    console.log('Clearing', runningIntervals.length, 'intervals');
+    runningIntervals.forEach(id => clearInterval(id));
+    runningIntervals.length = 0;
+}
+
+// Add interval tracking wrapper - use this instead of setInterval
+function createInterval(callback, delay) {
+    const intervalId = setInterval(callback, delay);
+    runningIntervals.push(intervalId);
+    return intervalId;
+}
+
 // Check if user is authenticated
 function checkAuth() {
     const token = localStorage.getItem('eews_auth_token');
@@ -143,6 +160,9 @@ async function loadPage(page) {
     // Check authentication first
     if (!checkAuth()) return;
 
+    // Clear all intervals from previous page BEFORE loading new content
+    clearAllIntervals();
+
     // Show loading spinner
     showLoadingSpinner();
 
@@ -177,6 +197,7 @@ async function loadPage(page) {
         console.log('initReportMap exists:', typeof initReportMap);
         console.log('initDashboard exists:', typeof initDashboard);
         console.log('initDevices exists:', typeof initDevices);
+        console.log('initAPIMonitor exists:', typeof initAPIMonitor);
 
         // Initialize page-specific scripts
         if (page.includes('dashboard.html') && typeof initDashboard === 'function') {
@@ -191,6 +212,9 @@ async function loadPage(page) {
         } else if (page.includes('reports.html') && typeof initReportMap === 'function') {
             console.log('Initializing Report Map...');
             await initReportMap();
+        } else if (page.includes('api.html') && typeof initAPIMonitor === 'function') {
+            console.log('Initializing API Monitor...');
+            await initAPIMonitor();
         }
 
     } catch (err) {

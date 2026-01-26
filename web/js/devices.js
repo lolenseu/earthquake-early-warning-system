@@ -127,5 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initDevices, 100);
 });
 
-// Refresh data every second
-setInterval(initDevices, 1000);
+// Refresh data every second - use createInterval if available, otherwise fallback
+if (typeof createInterval !== 'undefined') {
+    createInterval(initDevices, 1000);
+} else {
+    // Fallback if script.js hasn't loaded createInterval yet
+    setInterval(initDevices, 1000);
+}

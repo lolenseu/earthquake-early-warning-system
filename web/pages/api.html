@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Status</title>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h1>API Status</h1>
+            <div class="last-updated">Last updated: <span id="lastUpdated"></span>
+                <button onclick="refreshPage()" class="refresh-btn">⟳ Refresh</button>
+            </div>
+        </div>
+        
+        <div class="api-grid" id="apiGrid"></div>
+    </div>
+
+    <script>
+        // Redirect to login if not loaded inside layout
+        if (window.top === window.self) {
+            window.location.href = './login.html';
+        }
+    </script>
+</body>
+</html>
