@@ -3,6 +3,7 @@ let totalDevices = 0;  // Will be updated from API
 let onlineDevices = 0; // Will be updated from API
 let apiLatency = 0;    // Will be updated from ping
 let currentWarnings = 0; // Will be updated from API
+let dashboardRefreshing = false; // Guard to prevent overlapping refreshes
 
 // API Configuration
 const API_STORAGE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews';
@@ -75,6 +76,8 @@ async function fetchTotalDevices() {
 }
 
 async function fetchOnlineDevices() {
+    // Returns an object { count, devices, latency }
+    const start = performance.now();
     try {
         const response = await fetch(`${API_BASE_URL}/devices`, {
             mode: 'cors',
@@ -83,22 +86,42 @@ async function fetchOnlineDevices() {
                 'Cache-Control': 'no-cache'
             }
         });
-        
+
+        const end = performance.now();
+        const latency = Math.max(0, Math.round(end - start));
+
         if (!response.ok) {
-            return 0;
+            return { count: 0, devices: {}, latency: latency };
         }
-        
-        const data = await response.json();        
+
+        const data = await response.json();
         if (data.status === 'success' && data.devices) {
-            const count = Object.keys(data.devices).length;
-            return count;
+            const devices = data.devices;
+            const count = Object.keys(devices).length;
+            return { count: count, devices: devices, latency: latency };
         }
+
+        return { count: 0, devices: {}, latency: latency };
     } catch (error) {
-        return 0;
+        const end = performance.now();
+        const latency = Math.max(0, Math.round(end - start));
+        return { count: 0, devices: {}, latency: latency };
     }
 }
 
-async function fetchDeviceWarnings() {
+async function fetchDeviceWarnings(devices = null) {
+    // If devices object is provided, compute warnings directly
+    if (devices && typeof devices === 'object') {
+        let warningCount = 0;
+        Object.values(devices).forEach(device => {
+            if (device && device.g_force && device.g_force > 1.2) {
+                warningCount++;
+            }
+        });
+        return warningCount;
+    }
+
+    // Otherwise, fetch devices and compute
     try {
         const response = await fetch(`${API_BASE_URL}/devices`, {
             mode: 'cors',
@@ -107,21 +130,23 @@ async function fetchDeviceWarnings() {
                 'Cache-Control': 'no-cache'
             }
         });
-        
+
         if (!response.ok) {
             return 0;
         }
-        
-        const data = await response.json();        
+
+        const data = await response.json();
         if (data.status === 'success' && data.devices) {
             let warningCount = 0;
             Object.values(data.devices).forEach(device => {
-                if (device.g_force && device.g_force > 1.2) {
+                if (device && device.g_force && device.g_force > 1.2) {
                     warningCount++;
                 }
             });
             return warningCount;
         }
+
+        return 0;
     } catch (error) {
         return 0;
     }
@@ -129,22 +154,31 @@ async function fetchDeviceWarnings() {
 
 async function pingAPI() {
     const startTime = performance.now();
+
+    // Abort if ping takes longer than 3000ms to avoid stalled fetches
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
     try {
         const response = await fetch(`${API_BASE_URL}/devices`, { 
-            method: 'HEAD',
+            method: 'GET',
             mode: 'cors',
+            signal: controller.signal,
             headers: {
                 'Cache-Control': 'no-cache'
             }
         });
-        
+
+        clearTimeout(timeoutId);
         const endTime = performance.now();
-        const latency = Math.round(endTime - startTime);
+        const latency = Math.max(0, Math.round(endTime - startTime));
         return latency;
     } catch (error) {
+        clearTimeout(timeoutId);
+        // Return 0 to indicate unavailable latency
         return 0;
     }
-}
+} 
 
 // Initialize dashboard function - called when dashboard content is loaded
 function initDashboard() {
@@ -159,7 +193,7 @@ function initDashboard() {
         if (totalDevicesEl && onlineDevicesEl && apiLatencyEl && currentWarningsEl && lastUpdatedEl) {
             totalDevicesEl.textContent = totalDevices;
             onlineDevicesEl.textContent = onlineDevices;
-            apiLatencyEl.textContent = apiLatency + ' ms';
+            apiLatencyEl.textContent = (apiLatency && apiLatency > 0) ? (apiLatency + ' ms') : '--';
             currentWarningsEl.textContent = currentWarnings;
             
             // Update last updated time
@@ -331,17 +365,35 @@ function initDashboard() {
         });
     }
 
-    // Fetch and update all live data
+    // Fetch and update all live data (latitude taken from the online devices fetch)
     async function fetchLiveData() {
         try {
-            // Fetch all data concurrently for better performance
-            const [total, online, warnings, latency] = await Promise.all([
+            // Run total devices and online devices in parallel
+            const [totalSettled, onlineSettled] = await Promise.allSettled([
                 fetchTotalDevices(),
-                fetchOnlineDevices(),
-                fetchDeviceWarnings(),
-                pingAPI()
+                fetchOnlineDevices()
             ]);
-            
+
+            const total = totalSettled.status === 'fulfilled' ? totalSettled.value : 0;
+
+            let online = 0;
+            let warnings = 0;
+            let latency = 0;
+
+            if (onlineSettled.status === 'fulfilled' && onlineSettled.value) {
+                const val = onlineSettled.value;
+                online = val.count || 0;
+                const devices = val.devices || {};
+                latency = val.latency || 0;
+
+                // Compute warnings from devices result (fast, no extra network)
+                warnings = await fetchDeviceWarnings(devices);
+            } else {
+                // Online fetch failed; fallback: compute warnings by fetching devices and ping for latency
+                warnings = await fetchDeviceWarnings();
+                latency = await pingAPI();
+            }
+
             return {
                 totalDevices: total,
                 onlineDevices: online,
@@ -349,7 +401,13 @@ function initDashboard() {
                 latency: latency
             };
         } catch (error) {
-            return null;
+            // Fallback to zeros on unexpected error
+            return {
+                totalDevices: 0,
+                onlineDevices: 0,
+                warnings: 0,
+                latency: 0
+            };
         }
     }
 
@@ -384,21 +442,25 @@ function initDashboard() {
         metricsChart.update();
     }
 
-    // Live dashboard refresh - updates everything every 5 seconds
+    // Live dashboard refresh - updates everything every 1 second (guarded)
     async function refreshLiveDashboard() {
+        // Prevent overlapping runs if the previous fetch hasn't completed
+        if (window.dashboardRefreshing) return;
+        window.dashboardRefreshing = true;
+
         try {
             const newData = await fetchLiveData();
-            
+
             if (newData) {
                 // Update global variables
                 totalDevices = newData.totalDevices;
                 onlineDevices = newData.onlineDevices;
                 currentWarnings = newData.warnings;
                 apiLatency = newData.latency;
-                
+
                 // Update stats cards
                 updateStats();
-                
+
                 // Update live chart if on live view
                 if (currentDataRange === 'live') {
                     updateLiveDataChart(newData);
@@ -406,6 +468,9 @@ function initDashboard() {
             }
         } catch (error) {
             // Silent error handling
+        } finally {
+            // Allow the next refresh to run
+            window.dashboardRefreshing = false;
         }
     }
 
@@ -432,9 +497,22 @@ function initDashboard() {
         }
     });
 
-    // Refresh live dashboard every 1 second - use createInterval to track it
-    createInterval(refreshLiveDashboard, 1000);
+    // Refresh live dashboard every 1 second - ensure single interval and run immediately
+    // If a previous dashboard interval exists, clear and remove it from tracking
+    if (window.dashboardInterval) {
+        clearInterval(window.dashboardInterval);
+        const idx = runningIntervals.indexOf(window.dashboardInterval);
+        if (idx !== -1) runningIntervals.splice(idx, 1);
+    }
+
+    // Create a new interval and track it so it can be cleared on page change
+    window.dashboardInterval = setInterval(refreshLiveDashboard, 1000);
+    runningIntervals.push(window.dashboardInterval);
+
+    // Run one immediate refresh so UI updates right away
+    refreshLiveDashboard();
 }
+
 
 // Only export the initDashboard function for external use
 if (typeof module !== 'undefined' && module.exports) {

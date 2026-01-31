@@ -119,18 +119,23 @@ async function initDevices() {
     if (lastUpdated) {
         lastUpdated.textContent = new Date().toLocaleString();
     }
+
+    // Ensure a single tracked interval for updates (1s)
+    if (!window.devicesInterval || runningIntervals.indexOf(window.devicesInterval) === -1) {
+        // Clean up stale interval id reference if present
+        if (window.devicesInterval) {
+            try { clearInterval(window.devicesInterval); } catch (e) {}
+            const idx = runningIntervals.indexOf(window.devicesInterval);
+            if (idx !== -1) runningIntervals.splice(idx, 1);
+        }
+
+        if (typeof createInterval !== 'undefined') {
+            window.devicesInterval = createInterval(initDevices, 1000);
+        } else {
+            window.devicesInterval = setInterval(initDevices, 1000);
+            runningIntervals.push(window.devicesInterval);
+        }
+    }
 }
 
-// Initialize devices when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the page to load completely
-    setTimeout(initDevices, 100);
-});
-
-// Refresh data every second - use createInterval if available, otherwise fallback
-if (typeof createInterval !== 'undefined') {
-    createInterval(initDevices, 1000);
-} else {
-    // Fallback if script.js hasn't loaded createInterval yet
-    setInterval(initDevices, 1000);
-}
+// NOTE: Do not start timers on DOMContentLoaded here. Pages are loaded by script.js which calls initDevices when necessary.

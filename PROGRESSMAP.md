@@ -61,3 +61,4 @@
     - v0.6 - iot devices
     - v0.7 - admin authentication
     - v0.8 - mobile app
+    - v0.9 - api dashboard

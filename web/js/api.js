@@ -161,13 +161,22 @@ function initAPIMonitor() {
     // Initial check
     checkAllAPIs();
     
-    // Check every 10 seconds - use createInterval if available, otherwise fallback
-    if (typeof createInterval !== 'undefined') {
-        createInterval(checkAllAPIs, 10000);
-    } else {
-        setInterval(checkAllAPIs, 10000);
+    // Ensure a single tracked interval (10s)
+    if (!window.apiMonitorInterval || runningIntervals.indexOf(window.apiMonitorInterval) === -1) {
+        if (window.apiMonitorInterval) {
+            try { clearInterval(window.apiMonitorInterval); } catch (e) {}
+            const idx = runningIntervals.indexOf(window.apiMonitorInterval);
+            if (idx !== -1) runningIntervals.splice(idx, 1);
+        }
+
+        if (typeof createInterval !== 'undefined') {
+            window.apiMonitorInterval = createInterval(checkAllAPIs, 10000);
+        } else {
+            window.apiMonitorInterval = setInterval(checkAllAPIs, 10000);
+            runningIntervals.push(window.apiMonitorInterval);
+        }
     }
-    
+
     console.log('API Monitor initialized');
 }
 

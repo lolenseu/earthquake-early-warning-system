@@ -48,6 +48,28 @@ function initReportMap() {
         // Attach button listeners after map is initialized
         attachButtonListeners();
         loadQuakes('day');
+
+        // Ensure a single tracked interval for reports (10s)
+        if (!window.reportsInterval || runningIntervals.indexOf(window.reportsInterval) === -1) {
+            if (window.reportsInterval) {
+                try { clearInterval(window.reportsInterval); } catch (e) {}
+                const idx = runningIntervals.indexOf(window.reportsInterval);
+                if (idx !== -1) runningIntervals.splice(idx, 1);
+            }
+
+            const runLoad = () => {
+                const active = document.querySelector('.report-filters button.active');
+                const range = active ? active.dataset.range : 'day';
+                loadQuakes(range);
+            };
+
+            if (typeof createInterval !== 'undefined') {
+                window.reportsInterval = createInterval(runLoad, 10000);
+            } else {
+                window.reportsInterval = setInterval(runLoad, 10000);
+                runningIntervals.push(window.reportsInterval);
+            }
+        }
     } catch (error) {
         console.error('Error initializing map:', error);
     }
