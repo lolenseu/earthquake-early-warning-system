@@ -1,12 +1,18 @@
 ## parameters.py
 
-## pinouts
+# Buzzer configuration
+BUZZER_PIN = 13
+BUZZER_ACTIVE_LOW = False
+BUZZER_USE_PWM = True         # set True for passive buzzers that need PWM tone
+BUZZER_FREQ = 2000           # default tone frequency in Hz for PWM
+BUZZER_DUTY = 512            # default PWM duty (10-bit range typical)
+
+## i2c pinouts
 SLC_PINOUT = 22                             # slc pin
 SDA_PINOUT = 21                             # sda pin
 
 ## mpu frequency
-I2C_MPU_FREQUENCY = 400000                  # I2C mpu frequency
-
+I2C_FREQUENCY = 400000                      # I2C frequency
 
 ## identification
 DEVICE_ID = "ver1-r1-001"                   # unique device identifier *version - region - unit
