@@ -52,6 +52,74 @@ let apiData = {
     }
 };
 
+// Helper function to generate default labels
+function generateLabels(range) {
+    const now = new Date();
+    const labels = [];
+    
+    if (range === 'day') {
+        // Generate 24 hour labels
+        for (let i = 0; i < 24; i++) {
+            const hour = new Date(now);
+            hour.setHours(now.getHours() - (23 - i));
+            labels.push(hour.getHours().toString().padStart(2, '0') + ':00');
+        }
+    } else if (range === 'week') {
+        // Generate 7 day labels
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        for (let i = 0; i < 7; i++) {
+            const day = new Date(now);
+            day.setDate(now.getDate() - (6 - i));
+            labels.push(days[day.getDay()]);
+        }
+    } else if (range === 'month') {
+        // Generate 30 day labels
+        for (let i = 0; i < 30; i++) {
+            const day = new Date(now);
+            day.setDate(now.getDate() - (29 - i));
+            labels.push(day.getDate() + ' ' + day.toLocaleString('default', { month: 'short' }));
+        }
+    }
+    
+    return labels;
+}
+
+// Helper function to generate default datasets
+function generateDefaultDatasets(range) {
+    const dataLength = range === 'day' ? 24 : (range === 'week' ? 7 : 30);
+    
+    return [
+        {
+            label: 'Online Devices',
+            data: Array(dataLength).fill(0),
+            borderColor: '#00db5b',
+            backgroundColor: 'rgba(0, 219, 91, 0.1)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 2
+        },
+        {
+            label: 'Earthquake Warnings',
+            data: Array(dataLength).fill(0),
+            borderColor: '#ff416c',
+            backgroundColor: 'rgba(255, 65, 108, 0.1)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 2
+        },
+        {
+            label: 'Total Devices',
+            data: Array(dataLength).fill(0),
+            borderColor: '#4facfe',
+            backgroundColor: 'rgba(79, 172, 254, 0.1)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 2,
+            borderDash: [5, 5]
+        }
+    ];
+}
+
 // Fetch historical data from server
 async function fetchHistoricalData(range) {
     try {
@@ -69,7 +137,14 @@ async function fetchHistoricalData(range) {
         }
         
         const data = await response.json();
-        return data;
+        
+        // Validate the data structure
+        if (data.success && data.labels && data.datasets) {
+            return data;
+        } else {
+            console.log(`Invalid data structure for ${range}`);
+            return null;
+        }
     } catch (error) {
         console.error(`Error fetching ${range} data:`, error);
         return null;
@@ -110,11 +185,18 @@ async function loadAllHistoricalData() {
     for (const range of ranges) {
         const data = await fetchHistoricalData(range);
         if (data && data.success) {
+            // Ensure the data structure is correct
             apiData[range] = {
-                labels: data.labels || [],
-                datasets: data.datasets || []
+                labels: data.labels || generateLabels(range),
+                datasets: data.datasets || generateDefaultDatasets(range)
             };
-            console.log(`Loaded ${range} data:`, data);
+            console.log(`Loaded ${range} data:`, apiData[range]);
+        } else {
+            // Generate default data if fetch fails
+            apiData[range] = {
+                labels: generateLabels(range),
+                datasets: generateDefaultDatasets(range)
+            };
         }
     }
 }
@@ -409,6 +491,14 @@ async function initDashboard() {
             } else {
                 // Switch to historical chart
                 metricsChart.destroy();
+                
+                // Make sure we have data for this range
+                if (!apiData[currentDataRange] || !apiData[currentDataRange].labels || apiData[currentDataRange].labels.length === 0) {
+                    apiData[currentDataRange] = {
+                        labels: generateLabels(currentDataRange),
+                        datasets: generateDefaultDatasets(currentDataRange)
+                    };
+                }
                 
                 // Create chart with historical data
                 const historicalConfig = {

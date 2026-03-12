@@ -484,8 +484,21 @@ def process_historical_data():
         # Find data point for this hour
         hour_data = None
         for point in day_points:
-            point_time = datetime.fromisoformat(point.get("timestamp", now.isoformat()))
-            if point_time.hour == hour.hour and point_time.day == hour.day:
+            # Fix: Handle both ISO format with Z and without
+            timestamp_str = point.get("timestamp", now.isoformat())
+            try:
+                # Replace 'Z' with '+00:00' for fromisoformat compatibility
+                if timestamp_str.endswith('Z'):
+                    timestamp_str = timestamp_str.replace('Z', '+00:00')
+                point_time = datetime.fromisoformat(timestamp_str)
+                # Convert to local time for comparison
+                if point_time.tzinfo:
+                    point_time = point_time.replace(tzinfo=None)
+            except (ValueError, TypeError):
+                # Fallback to current time if parsing fails
+                point_time = now
+            
+            if point_time.hour == hour.hour and point_time.day == hour.day and point_time.month == hour.month:
                 hour_data = point
                 break
         
@@ -514,7 +527,20 @@ def process_historical_data():
         # Find data point for this day
         day_data = None
         for point in week_points:
-            point_time = datetime.fromisoformat(point.get("timestamp", now.isoformat()))
+            # Fix: Handle both ISO format with Z and without
+            timestamp_str = point.get("timestamp", now.isoformat())
+            try:
+                # Replace 'Z' with '+00:00' for fromisoformat compatibility
+                if timestamp_str.endswith('Z'):
+                    timestamp_str = timestamp_str.replace('Z', '+00:00')
+                point_time = datetime.fromisoformat(timestamp_str)
+                # Convert to local time for comparison
+                if point_time.tzinfo:
+                    point_time = point_time.replace(tzinfo=None)
+            except (ValueError, TypeError):
+                # Fallback to current time if parsing fails
+                point_time = now
+            
             if point_time.day == day.day and point_time.month == day.month:
                 day_data = point
                 break
@@ -544,7 +570,20 @@ def process_historical_data():
         # Find data point for this day
         day_data = None
         for point in month_points:
-            point_time = datetime.fromisoformat(point.get("timestamp", now.isoformat()))
+            # Fix: Handle both ISO format with Z and without
+            timestamp_str = point.get("timestamp", now.isoformat())
+            try:
+                # Replace 'Z' with '+00:00' for fromisoformat compatibility
+                if timestamp_str.endswith('Z'):
+                    timestamp_str = timestamp_str.replace('Z', '+00:00')
+                point_time = datetime.fromisoformat(timestamp_str)
+                # Convert to local time for comparison
+                if point_time.tzinfo:
+                    point_time = point_time.replace(tzinfo=None)
+            except (ValueError, TypeError):
+                # Fallback to current time if parsing fails
+                point_time = now
+            
             if point_time.day == day.day and point_time.month == day.month:
                 day_data = point
                 break
