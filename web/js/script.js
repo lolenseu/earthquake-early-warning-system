@@ -65,14 +65,161 @@ function redirectToLogin() {
     }
 }
 
-// Logout function
-function logoutUser() {
-    // Clear authentication data
-    localStorage.removeItem('eews_auth_token');
-    localStorage.removeItem('eews_remember');
+// Show logout confirmation dialog
+function showLogoutConfirmation() {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 11000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            animation: logoutFadeIn 0.3s ease;
+        `;
+
+        dialog.innerHTML = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span class="material-icons" style="font-size: 64px; color: #e53e3e; background: #fff5f5; padding: 20px; border-radius: 50%; box-shadow: 0 10px 20px rgba(229, 62, 62, 0.2);">logout</span>
+                <h3 style="color: #2d3748; margin: 20px 0 10px; font-size: 24px; font-weight: 600;">Confirm Logout</h3>
+                <p style="color: #718096; font-size: 16px; margin: 0; line-height: 1.6;">Are you sure you want to log out?</p>
+            </div>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 25px;">
+                <button id="logoutCancelBtn" style="
+                    padding: 12px 24px;
+                    border: 2px solid #e2e8f0;
+                    background: white;
+                    color: #718096;
+                    border-radius: 12px;
+                    font-size: 15px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    flex: 1;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                " onmouseover="this.style.background='#f7fafc'; this.style.borderColor='#cbd5e0'" onmouseout="this.style.background='white'; this.style.borderColor='#e2e8f0'">
+                    <span class="material-icons" style="font-size: 18px;">cancel</span>
+                    Cancel
+                </button>
+                <button id="logoutConfirmBtn" style="
+                    padding: 12px 24px;
+                    border: none;
+                    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+                    color: white;
+                    border-radius: 12px;
+                    font-size: 15px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    flex: 1;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(229, 62, 62, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(229, 62, 62, 0.3)'">
+                    <span class="material-icons" style="font-size: 18px;">logout</span>
+                    Yes, Logout
+                </button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        // Add animation style if not exists
+        if (!document.getElementById('logoutAnimationStyle')) {
+            const style = document.createElement('style');
+            style.id = 'logoutAnimationStyle';
+            style.textContent = `
+                @keyframes logoutFadeIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Handle cancel
+        document.getElementById('logoutCancelBtn').onclick = () => {
+            document.body.removeChild(overlay);
+            resolve(false);
+        };
+
+        // Handle confirm
+        document.getElementById('logoutConfirmBtn').onclick = () => {
+            document.body.removeChild(overlay);
+            resolve(true);
+        };
+
+        // Handle click outside
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                resolve(false);
+            }
+        };
+
+        // Handle escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(overlay);
+                document.removeEventListener('keydown', handleEscape);
+                resolve(false);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+    });
+}
+
+// Updated logout function with confirmation
+async function logoutUser() {
+    // Show confirmation dialog
+    const confirmed = await showLogoutConfirmation();
     
-    // Redirect to login page
-    window.location.href = 'login.html';
+    if (confirmed) {
+        // Show loading state on logout button if needed
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            const originalHtml = logoutBtn.innerHTML;
+            logoutBtn.innerHTML = '<span class="material-icons rotating">logout</span><span>Logging out...</span>';
+            logoutBtn.style.opacity = '0.7';
+            logoutBtn.style.pointerEvents = 'none';
+        }
+
+        // Clear authentication data
+        localStorage.removeItem('eews_auth_token');
+        localStorage.removeItem('eews_remember');
+        localStorage.removeItem('currentPage');
+        
+        // Clear all intervals
+        clearAllIntervals();
+        
+        // Small delay to show loading state
+        setTimeout(() => {
+            // Redirect to login page
+            window.location.href = 'login.html';
+        }, 500);
+    }
 }
 
 // Reload the page
@@ -296,11 +443,15 @@ if (window.location.pathname.includes('login.html')) {
 checkMobile();
 window.addEventListener('resize', checkMobile);
 
-// Logout button event listener (now li element)
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', logoutUser);
-}
+// Logout button event listener
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        // Remove any existing listeners and add the new one
+        logoutBtn.replaceWith(logoutBtn.cloneNode(true));
+        document.getElementById('logoutBtn')?.addEventListener('click', logoutUser);
+    }
+});
 
 // Settings button event listener (now li element)
 const settingsBtn = document.getElementById('settingsBtn');
