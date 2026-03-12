@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Dashboard - EEWS Monitor</title>
+    <!-- Add Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Add Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Link to CSS file -->
+    <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
     <div class="dashboard">
         <div class="dashboard-header">
-            <h1>Dashboard</h1>
-            <div class="last-updated">Last updated: <span id="lastUpdated"></span>
+            <h1>EEWS Dashboard</h1>
+            <div class="last-updated">
+                Last updated: <span id="lastUpdated">--</span>
                 <button onclick="refreshPage()" class="refresh-btn">⟳ Refresh</button>
             </div>
         </div>
@@ -88,10 +95,18 @@
         </div>
     </div>
 
+    <script src="dashboard.js"></script>
     <script>
         // Redirect to login if not loaded inside layout
         if (window.top === window.self) {
             window.location.href = './login.html';
+        }
+
+        // Manual refresh function
+        function refreshPage() {
+            if (window.initDashboard) {
+                window.initDashboard();
+            }
         }
     </script>
 </body>

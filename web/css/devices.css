@@ -1,4 +1,4 @@
-/* devices.css */
+/* devices.css - Original design */
 .device-grid {
     display: grid;
     grid-template-columns: 1fr;

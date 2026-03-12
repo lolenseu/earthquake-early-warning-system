@@ -31,6 +31,7 @@ mem_data_stream:dict = {}
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
 EEWS_DEVICES_FILE = os.path.join(os.path.dirname(__file__), "eews_devices.json")
 HISTORICAL_DATA_FILE = os.path.join(os.path.dirname(__file__), "historical_data.json")
+LOCATION_CACHE_FILE = os.path.join(os.path.dirname(__file__), "location_cache.json")
 
 EEWS_DEVICES: dict = {}
 EEWS_STORE: dict = {}
@@ -45,7 +46,8 @@ MIN_DEVICES_FOR_WARNING = 2            # Default is 5
 
 EEWS_EXPIRY_SECONDS = 10
 
-
+# Location cache
+LOCATION_CACHE = {}
 
 # Response Class
 class Response:
@@ -131,6 +133,140 @@ def get_server_public_ip() -> str:
     except requests.RequestException:
         return 'Unable to get IP'
 
+# Location cache functions
+def load_location_cache():
+    """Load location cache from file"""
+    global LOCATION_CACHE
+    if os.path.exists(LOCATION_CACHE_FILE):
+        try:
+            with open(LOCATION_CACHE_FILE, 'r') as f:
+                LOCATION_CACHE = json.load(f)
+        except:
+            LOCATION_CACHE = {}
+    return LOCATION_CACHE
+
+def save_location_cache():
+    """Save location cache to file"""
+    global LOCATION_CACHE
+    try:
+        with open(LOCATION_CACHE_FILE, 'w') as f:
+            json.dump(LOCATION_CACHE, f, indent=2)
+    except:
+        pass
+
+def get_city_from_coordinates(latitude, longitude):
+    """
+    Get city name from coordinates using OpenStreetMap Nominatim API
+    Includes caching to avoid rate limiting
+    """
+    if latitude is None or longitude is None:
+        return 'Unknown (No coordinates)'
+    
+    try:
+        # Validate coordinates
+        try:
+            lat = float(latitude)
+            lon = float(longitude)
+        except (TypeError, ValueError):
+            return 'Unknown (Invalid coordinates)'
+        
+        # Check if coordinates are within valid ranges
+        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+            return 'Unknown (Out of range)'
+        
+        # Create cache key (rounded to 3 decimal places for approximate location)
+        cache_key = f"{lat:.3f},{lon:.3f}"
+        
+        # Load cache if not already loaded
+        if not LOCATION_CACHE:
+            load_location_cache()
+        
+        # Check cache first
+        if cache_key in LOCATION_CACHE:
+            return LOCATION_CACHE[cache_key]
+        
+        # Use OpenStreetMap Nominatim API
+        url = "https://nominatim.openstreetmap.org/reverse"
+        params = {
+            'format': 'json',
+            'lat': lat,
+            'lon': lon,
+            'zoom': 10,  # City level
+            'addressdetails': 1,
+            'accept-language': 'en'
+        }
+        
+        # Add a proper User-Agent as required by Nominatim terms
+        headers = {
+            'User-Agent': 'EEWS-Monitor/1.0 (https://github.com/your-repo)',
+            'Accept-Language': 'en'
+        }
+        
+        # Make request with timeout
+        response = requests.get(url, params=params, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Extract address components
+            address = data.get('address', {})
+            
+            # Try different address components in order of preference
+            city = (
+                address.get('city') or
+                address.get('town') or
+                address.get('village') or
+                address.get('hamlet') or
+                address.get('municipality') or
+                address.get('county') or
+                address.get('state_district') or
+                address.get('state') or
+                address.get('country') or
+                'Unknown'
+            )
+            
+            # Add country for better context
+            country = address.get('country', '')
+            if country and city != 'Unknown' and city != country:
+                result = f"{city}, {country}"
+            elif city:
+                result = city
+            else:
+                # Get display name if available
+                display_name = data.get('display_name', '')
+                if display_name:
+                    # Take first part of display name
+                    result = display_name.split(',')[0].strip()
+                else:
+                    result = f"Location at {lat:.4f}, {lon:.4f}"
+            
+            # Cache the result
+            LOCATION_CACHE[cache_key] = result
+            save_location_cache()
+            
+            return result
+        else:
+            # Fallback to coordinates if API fails
+            result = f"Location at {lat:.2f}, {lon:.2f}"
+            
+            # Cache the fallback too
+            LOCATION_CACHE[cache_key] = result
+            save_location_cache()
+            
+            return result
+            
+    except requests.exceptions.Timeout:
+        result = f"Location at {lat:.2f}, {lon:.2f} (timeout)"
+        return result
+    except requests.exceptions.RequestException as e:
+        result = f"Location at {lat:.2f}, {lon:.2f}"
+        return result
+    except Exception as e:
+        # Ultimate fallback - return coordinates
+        if 'lat' in locals() and 'lon' in locals():
+            return f"Location at {lat:.2f}, {lon:.2f}"
+        return 'Unknown'
+
 # EEWS functions
 def load_eews_users():
     if not os.path.exists(USERS_FILE):
@@ -178,7 +314,134 @@ def load_eews_users():
                 json.dump(users, f, indent=2)
         
         return users
+
+def save_eews_devices(device):
+    os.makedirs(os.path.dirname(EEWS_DEVICES_FILE), exist_ok=True)
+
+    if os.path.exists(EEWS_DEVICES_FILE):
+        try:
+            with open(EEWS_DEVICES_FILE, "r") as f:
+                data = json.load(f)
+                devices = data.get("devices", [])
+        except json.JSONDecodeError:
+            devices = []
+    else:
+        devices = []
+
+    # Get city name with better error handling
+    city = get_city_from_coordinates(device.get("latitude"), device.get("longitude"))
+
+    device_record = {
+        "device_id": device["device_id"],
+        "auth_seed": device["auth_seed"],
+        "latitude": device.get("latitude"),
+        "longitude": device.get("longitude"),
+        "location": city,
+        "registered_at": datetime.now().isoformat()
+    }
+
+    # Check if device already exists and update it
+    replaced = False
+    for i, d in enumerate(devices):
+        if d["device_id"] == device_record["device_id"]:
+            # Preserve original registration date if updating
+            if "registered_at" in d:
+                device_record["registered_at"] = d["registered_at"]
+            devices[i] = device_record
+            replaced = True
+            break
+
+    if not replaced:
+        devices.append(device_record)
+
+    # Save with pretty formatting
+    with open(EEWS_DEVICES_FILE, "w") as f:
+        json.dump({
+            "devices": devices, 
+            "updated_at": datetime.now().isoformat(),
+            "total_devices": len(devices)
+        }, f, indent=2)
+
+    return device_record
+
+def load_eews_devices():
+    if os.path.exists(EEWS_DEVICES_FILE):
+        try:
+            with open(EEWS_DEVICES_FILE, "r") as f:
+                data = json.load(f)
+                return data.get("devices", [])
+        except:
+            return []
+    return []
+
+def cleanup_eews_store():
+    now = datetime.now()
+    expired_devices = []
+
+    for device_id, device_data in list(EEWS_STORE.items()):
+        ts_str = device_data.get("server_timestamp")
+        if not ts_str:
+            expired_devices.append(device_id)
+            continue
+        try:
+            ts = datetime.fromisoformat(ts_str)
+            if now - ts > timedelta(seconds=EEWS_EXPIRY_SECONDS):
+                expired_devices.append(device_id)
+        except Exception:
+            expired_devices.append(device_id)
+
+    for device_id in expired_devices:
+        EEWS_STORE.pop(device_id, None)
+        
+def cleanup_loop():
+    while True:
+        cleanup_eews_store()
+        time.sleep(1)
+
+def get_device_location_map():
+    devices = load_eews_devices()
+    return {d["device_id"]: d.get("location", "Unknown") for d in devices}
     
+def detect_earthquake_warning():
+    cleanup_eews_store()
+
+    device_location_map = get_device_location_map()
+    location_hits = {}
+
+    for device_id, data in EEWS_STORE.items():
+        g_force = data.get("g_force")
+        if g_force is None or g_force <= G_FORCE_THRESHOLD:
+            continue
+
+        location = device_location_map.get(device_id)
+        if not location:
+            continue
+
+        if location not in location_hits:
+            location_hits[location] = []
+
+        location_hits[location].append({
+            "device_id": device_id,
+            "g_force": g_force,
+            "server_timestamp": data.get("server_timestamp")
+        })
+
+    # Check if any location meets warning condition
+    for location, devices in location_hits.items():
+        if len(devices) >= MIN_DEVICES_FOR_WARNING:
+            return {
+                "warning": True,
+                "location": location,
+                "device_count": len(devices),
+                "devices": devices,
+                "message": f"Earthquake detected in {location}"
+            }
+
+    return {
+        "warning": False,
+        "message": "No earthquake detected"
+    }
+
 # Initialize historical data structure
 def init_historical_data():
     if not os.path.exists(HISTORICAL_DATA_FILE):
@@ -368,154 +631,6 @@ def process_historical_data():
                 }
             ]
         }
-    }
-
-def save_eews_devices(device):
-    os.makedirs(os.path.dirname(EEWS_DEVICES_FILE), exist_ok=True)
-
-    if os.path.exists(EEWS_DEVICES_FILE):
-        with open(EEWS_DEVICES_FILE, "r") as f:
-            data = json.load(f)
-            devices = data.get("devices", [])
-    else:
-        devices = []
-
-    city = get_city_from_coordinates(device.get("latitude"), device.get("longitude"))
-
-    device_record = {
-        "device_id": device["device_id"],
-        "auth_seed": device["auth_seed"],
-        "latitude": device.get("latitude"),
-        "longitude": device.get("longitude"),
-        "location": city,
-        "registered_at": datetime.now().isoformat()
-    }
-
-    replaced = False
-    for i, d in enumerate(devices):
-        if d["device_id"] == device_record["device_id"]:
-            devices[i] = device_record
-            replaced = True
-            break
-
-    if not replaced:
-        devices.append(device_record)
-
-    with open(EEWS_DEVICES_FILE, "w") as f:
-        json.dump({"devices": devices, "updated_at": datetime.now().isoformat()}, f, indent=2)
-
-    return device_record
-
-def load_eews_devices():
-    if os.path.exists(EEWS_DEVICES_FILE):
-        try:
-            with open(EEWS_DEVICES_FILE, "r") as f:
-                data = json.load(f)
-                return data.get("devices", [])
-        except:
-            return []
-    return []
-
-def cleanup_eews_store():
-    now = datetime.now()
-    expired_devices = []
-
-    for device_id, device_data in list(EEWS_STORE.items()):
-        ts_str = device_data.get("server_timestamp")
-        if not ts_str:
-            expired_devices.append(device_id)
-            continue
-        try:
-            ts = datetime.fromisoformat(ts_str)
-            if now - ts > timedelta(seconds=EEWS_EXPIRY_SECONDS):
-                expired_devices.append(device_id)
-        except Exception:
-            expired_devices.append(device_id)
-
-    for device_id in expired_devices:
-        EEWS_STORE.pop(device_id, None)
-        
-def cleanup_loop():
-    while True:
-        cleanup_eews_store()
-        time.sleep(1)
-
-def get_city_from_coordinates(latitude, longitude):
-    try:
-        url = f"https://nominatim.openstreetmap.org/reverse"
-        params = {
-            'format': 'json',
-            'lat': latitude,
-            'lon': longitude,
-            'addressdetails': 1,
-            'accept-language': 'en'
-        }
-        
-        response = requests.get(url, params=params, headers={
-            'User-Agent': 'EEWS-Monitor/1.0'
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            address = data.get('address', {})
-            
-            city = (address.get('city') or 
-                   address.get('town') or 
-                   address.get('village') or 
-                   address.get('hamlet') or 
-                   address.get('municipality') or
-                   address.get('state') or
-                   'Unknown')
-            
-            return city
-        else:
-            return 'Unknown'
-            
-    except Exception:
-        return 'Unknown'
-
-def get_device_location_map():
-    devices = load_eews_devices()
-    return {d["device_id"]: d.get("location", "Unknown") for d in devices}
-    
-def detect_earthquake_warning():
-    cleanup_eews_store()
-
-    device_location_map = get_device_location_map()
-    location_hits = {}
-
-    for device_id, data in EEWS_STORE.items():
-        g_force = data.get("g_force")
-        if g_force is None or g_force <= G_FORCE_THRESHOLD:
-            continue
-
-        location = device_location_map.get(device_id)
-        if not location:
-            continue
-
-        if location not in location_hits:
-            location_hits[location] = []
-
-        location_hits[location].append({
-            "device_id": device_id,
-            "g_force": g_force,
-            "server_timestamp": data.get("server_timestamp")
-        })
-
-    # Check if any location meets warning condition
-    for location, devices in location_hits.items():
-        if len(devices) >= MIN_DEVICES_FOR_WARNING:
-            return {
-                "warning": True,
-                "location": location,
-                "device_count": len(devices),
-                "devices": devices,
-                "message": f"Earthquake detected in {location}"
-            }
-
-    return {
-        "warning": False,
-        "message": "No earthquake detected"
     }
 
 # Routes
@@ -1174,8 +1289,21 @@ def earthquake_early_warning_system_post_device_id():
     try:
         device_id = request.values.get("device_id")
         auth_seed = request.values.get("auth_seed")
-        latitude = request.values.get("latitude", type=float)
-        longitude = request.values.get("longitude", type=float)
+        
+        # Handle coordinates - they might come as strings
+        lat_str = request.values.get("latitude")
+        lon_str = request.values.get("longitude")
+        
+        latitude = None
+        longitude = None
+        
+        if lat_str and lon_str:
+            try:
+                latitude = float(lat_str)
+                longitude = float(lon_str)
+            except ValueError:
+                # If conversion fails, log but continue
+                print(f"Invalid coordinates: lat={lat_str}, lon={lon_str}")
 
         if not device_id or not auth_seed:
             return jsonify({
@@ -1204,7 +1332,8 @@ def earthquake_early_warning_system_post_device_id():
         }), 200
 
     except Exception as e:
-        return jsonify({"status": "error",
+        return jsonify({
+            "status": "error",
             "msg": f"Invalid request: {str(e)}",
             "server_timestamp": timestamp
         }), 400
@@ -1334,6 +1463,114 @@ def earthquake_early_warning_system_devices():
             "msg": str(e),
             "server_timestamp": timestamp
         }),500
+        
+@app.route('/pipeline/eews/device/restart', methods=['POST'])
+def device_restart():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        data = request.get_json()
+        device_id = data.get("device_id")
+        
+        # Get token from header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized",
+                "server_timestamp": timestamp
+            }), 401
+        
+        if not device_id:
+            return jsonify({
+                "success": False,
+                "message": "Device ID required",
+                "server_timestamp": timestamp
+            }), 400
+        
+        # Simulate device restart
+        # In a real implementation, this would send a command to the actual device
+        
+        # Remove device from EEWS_STORE to simulate offline during restart
+        if device_id in EEWS_STORE:
+            # Store the device data temporarily
+            device_data = EEWS_STORE[device_id]
+            # Remove it to show offline
+            del EEWS_STORE[device_id]
+            
+            # In a real scenario, you'd have a background task to bring it back online
+            # For simulation, we'll add it back after a delay
+            def bring_device_back():
+                time.sleep(3)  # 3 seconds restart time
+                EEWS_STORE[device_id] = device_data
+                print(f"Device {device_id} back online after restart")
+            
+            threading.Thread(target=bring_device_back, daemon=True).start()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Device {device_id} restart initiated",
+            "server_timestamp": timestamp
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e),
+            "server_timestamp": timestamp
+        }), 500
+
+@app.route('/pipeline/eews/device/sleep', methods=['POST'])
+def device_sleep():
+    timestamp = datetime.now().isoformat()
+    
+    try:
+        data = request.get_json()
+        device_id = data.get("device_id")
+        duration = data.get("duration", 30)  # Default 30 seconds
+        
+        # Get token from header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized",
+                "server_timestamp": timestamp
+            }), 401
+        
+        if not device_id:
+            return jsonify({
+                "success": False,
+                "message": "Device ID required",
+                "server_timestamp": timestamp
+            }), 400
+        
+        # Simulate device sleep
+        # Remove device from EEWS_STORE to simulate offline during sleep
+        if device_id in EEWS_STORE:
+            device_data = EEWS_STORE[device_id]
+            del EEWS_STORE[device_id]
+            
+            # Wake up after duration
+            def wake_device():
+                time.sleep(duration)
+                EEWS_STORE[device_id] = device_data
+                print(f"Device {device_id} woke up after {duration}s sleep")
+            
+            threading.Thread(target=wake_device, daemon=True).start()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Device {device_id} sleeping for {duration} seconds",
+            "server_timestamp": timestamp
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e),
+            "server_timestamp": timestamp
+        }), 500
     
 @app.route('/pipeline/eews/warning', methods=['GET'])
 def earthquake_warning_check():
@@ -1364,6 +1601,9 @@ def page_not_found(e):
 # Setup
 cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
 cleanup_thread.start()
+
+# Load location cache on startup
+load_location_cache()
 
 # Main
 if __name__ == '__main__':

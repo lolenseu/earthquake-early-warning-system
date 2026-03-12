@@ -1,0 +1,426 @@
+/* device-modal.css - Isolated styles for device modal only */
+/* All selectors are prefixed with .device-modal to avoid conflicts */
+
+/* Modal Container */
+.device-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.device-modal.show {
+    display: flex;
+}
+
+/* Modal Content */
+.device-modal .device-modal-content {
+    background: white;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    position: relative;
+    animation: deviceModalFadeIn 0.3s ease;
+}
+
+@keyframes deviceModalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Modal Header */
+.device-modal .device-modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 24px 24px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.device-modal .device-header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.device-modal .device-avatar {
+    font-size: 48px !important;
+    color: white !important;
+}
+
+/* Device Title - White text */
+.device-modal .device-title h2 {
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.device-modal .device-status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+    margin-left: 10px;
+    color: white !important;
+}
+
+.device-modal .device-status-badge.online {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.device-modal .device-status-badge.offline {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.device-modal .device-status-badge.warning {
+    background: rgba(229, 62, 62, 0.3);
+    border: 1px solid #ff6b6b;
+    animation: devicePulse 2s infinite;
+}
+
+@keyframes devicePulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Close Button */
+.device-modal .device-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.device-modal .device-modal-close:hover {
+    background: rgba(229, 62, 62, 0.3);
+}
+
+/* Modal Body */
+.device-modal .device-modal-body {
+    padding: 30px;
+}
+
+.device-section {
+    margin-bottom: 30px;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.device-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #2d3748;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.device-section-title .material-icons {
+    color: #667eea;
+}
+
+/* Device Info Grid */
+.device-modal .device-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.device-modal .device-info-item {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.device-modal .device-info-item label {
+    display: block;
+    font-size: 12px;
+    color: #718096;
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.device-modal .device-info-value {
+    font-size: 16px;
+    color: #2d3748;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+/* Full Device ID Display */
+.device-modal .device-full-id {
+    background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+    border: 1px solid #667eea30;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Courier New', monospace;
+}
+
+.device-modal .device-full-id .material-icons {
+    color: #667eea;
+    font-size: 24px;
+}
+
+.device-modal .device-full-id span:last-child {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    word-break: break-all;
+}
+
+/* Sensor Grid */
+.device-modal .sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.device-modal .sensor-card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.device-modal .sensor-icon {
+    font-size: 32px !important;
+    color: #667eea;
+}
+
+.device-modal .sensor-data {
+    display: flex;
+    flex-direction: column;
+}
+
+.device-modal .sensor-label {
+    font-size: 12px;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.device-modal .sensor-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+/* Action Buttons - Updated for 2 buttons */
+.device-modal .action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.device-modal .action-btn {
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.device-modal .action-btn .material-icons {
+    font-size: 18px;
+}
+
+.device-modal .action-btn.restart-btn {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.device-modal .action-btn.sleep-btn {
+    background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+}
+
+.device-modal .action-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(110%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.device-modal .action-btn:active {
+    transform: translateY(0);
+}
+
+.device-modal .action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Action Status */
+.device-modal .action-status {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    animation: deviceSlideIn 0.3s ease;
+}
+
+.device-modal .action-status.success {
+    background: #f0fff4;
+    color: #48bb78;
+    border: 1px solid #48bb78;
+}
+
+.device-modal .action-status.error {
+    background: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #e53e3e;
+}
+
+.device-modal .action-status.info {
+    background: #ebf4ff;
+    color: #667eea;
+    border: 1px solid #667eea;
+}
+
+.device-modal .action-status .material-icons {
+    font-size: 20px;
+}
+
+@keyframes deviceSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scrollbar Styling */
+.device-modal .device-modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.device-modal .device-modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.device-modal .device-modal-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+/* Rotating animation */
+.rotating {
+    animation: rotating 1s linear infinite;
+}
+
+@keyframes rotating {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .device-modal .device-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .device-modal .sensor-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .device-modal .action-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .device-modal .device-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .device-modal .device-modal-header {
+        padding: 15px 20px;
+    }
+    
+    .device-modal .device-modal-body {
+        padding: 20px;
+    }
+    
+    .device-modal .device-avatar {
+        font-size: 40px !important;
+    }
+    
+    .device-modal .device-title h2 {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .device-modal .sensor-card {
+        padding: 12px;
+    }
+    
+    .device-modal .sensor-icon {
+        font-size: 28px !important;
+    }
+    
+    .device-modal .sensor-value {
+        font-size: 18px;
+    }
+}

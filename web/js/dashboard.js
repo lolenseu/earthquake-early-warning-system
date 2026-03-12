@@ -1,15 +1,13 @@
 // Dashboard data simulation
-let totalDevices = 0;  // Will be updated from API
-let onlineDevices = 0; // Will be updated from API
-let apiLatency = 0;    // Will be updated from ping
-let currentWarnings = 0; // Will be updated from API
-let dashboardRefreshing = false; // Guard to prevent overlapping refreshes
+let totalDevices = 0;
+let onlineDevices = 0;
+let apiLatency = 0;
+let currentWarnings = 0;
+let dashboardRefreshing = false;
 
 // API Configuration
 const API_STORAGE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews';
 const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews';
-
-// Historical data storage endpoints
 const HISTORICAL_API_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/historical';
 
 // Live data arrays for real-time chart
@@ -18,6 +16,22 @@ let liveData = {
     onlineDevices: [],
     warnings: [],
     maxDevices: []
+};
+
+// API Data for different time ranges
+let apiData = {
+    day: {
+        labels: [],
+        datasets: []
+    },
+    week: {
+        labels: [],
+        datasets: []
+    },
+    month: {
+        labels: [],
+        datasets: []
+    }
 };
 
 // Initialize live data with current values
@@ -36,35 +50,27 @@ function initializeLiveData() {
     liveData.maxDevices.push(totalDevices);
 }
 
-// API Data for different time ranges (will be populated from server)
-let apiData = {
-    day: {
-        labels: [],
-        datasets: []
-    },
-    week: {
-        labels: [],
-        datasets: []
-    },
-    month: {
-        labels: [],
-        datasets: []
-    }
-};
-
-// Fetch historical data from server
+// Fetch historical data from server with authentication
 async function fetchHistoricalData(range) {
     try {
+        const token = localStorage.getItem('eews_auth_token');
+        
+        if (!token) {
+            console.log('No auth token found');
+            return null;
+        }
+
         const response = await fetch(`${HISTORICAL_API_URL}/${range}`, {
             mode: 'cors',
             headers: {
                 'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'no-cache',
+                'Authorization': `Bearer ${token}`
             }
         });
         
         if (!response.ok) {
-            console.log(`Failed to fetch ${range} data`);
+            console.log(`Failed to fetch ${range} data: ${response.status}`);
             return null;
         }
         
@@ -89,6 +95,8 @@ async function saveHistoricalDataPoint() {
     
     try {
         const token = localStorage.getItem('eews_auth_token');
+        if (!token) return;
+
         await fetch(`${HISTORICAL_API_URL}/save`, {
             method: 'POST',
             mode: 'cors',
@@ -119,7 +127,7 @@ async function loadAllHistoricalData() {
     }
 }
 
-// Fetch functions for live data
+// Fetch total devices
 async function fetchTotalDevices() {
     try {
         const response = await fetch(`${API_STORAGE_URL}/devices_list`, {
@@ -136,16 +144,16 @@ async function fetchTotalDevices() {
         
         const data = await response.json();
         if (data.status === 'success' && data.devices) {
-            const count = data.total_devices || data.devices.length;
-            return count;
+            return data.total_devices || data.devices.length;
         }
+        return 0;
     } catch (error) {
         return 0;
     }
 }
 
+// Fetch online devices
 async function fetchOnlineDevices() {
-    // Returns an object { count, devices, latency }
     const start = performance.now();
     try {
         const response = await fetch(`${API_BASE_URL}/devices`, {
@@ -178,8 +186,8 @@ async function fetchOnlineDevices() {
     }
 }
 
+// Fetch device warnings
 async function fetchDeviceWarnings(devices = null) {
-    // If devices object is provided, compute warnings directly
     if (devices && typeof devices === 'object') {
         let warningCount = 0;
         Object.values(devices).forEach(device => {
@@ -190,7 +198,6 @@ async function fetchDeviceWarnings(devices = null) {
         return warningCount;
     }
 
-    // Otherwise, fetch devices and compute
     try {
         const response = await fetch(`${API_BASE_URL}/devices`, {
             mode: 'cors',
@@ -221,10 +228,9 @@ async function fetchDeviceWarnings(devices = null) {
     }
 }
 
+// Ping API for latency
 async function pingAPI() {
     const startTime = performance.now();
-
-    // Abort if ping takes longer than 3000ms to avoid stalled fetches
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
@@ -240,41 +246,143 @@ async function pingAPI() {
 
         clearTimeout(timeoutId);
         const endTime = performance.now();
-        const latency = Math.max(0, Math.round(endTime - startTime));
-        return latency;
+        return Math.max(0, Math.round(endTime - startTime));
     } catch (error) {
         clearTimeout(timeoutId);
-        // Return 0 to indicate unavailable latency
         return 0;
     }
-} 
+}
 
-// Initialize dashboard function - called when dashboard content is loaded
-async function initDashboard() {
-    // Update stats cards
-    function updateStats() {
-        const totalDevicesEl = document.getElementById('totalDevices');
-        const onlineDevicesEl = document.getElementById('onlineDevices');
-        const apiLatencyEl = document.getElementById('apiLatency');
-        const currentWarningsEl = document.getElementById('currentWarnings');
-        const lastUpdatedEl = document.getElementById('lastUpdated');
-        
-        if (totalDevicesEl && onlineDevicesEl && apiLatencyEl && currentWarningsEl && lastUpdatedEl) {
-            totalDevicesEl.textContent = totalDevices;
-            onlineDevicesEl.textContent = onlineDevices;
-            apiLatencyEl.textContent = (apiLatency && apiLatency > 0) ? (apiLatency + ' ms') : '--';
-            currentWarningsEl.textContent = currentWarnings;
-            
-            // Update last updated time
-            const now = new Date();
-            lastUpdatedEl.textContent = now.toLocaleString();
+// Fetch all live data
+async function fetchLiveData() {
+    try {
+        const [totalSettled, onlineSettled] = await Promise.allSettled([
+            fetchTotalDevices(),
+            fetchOnlineDevices()
+        ]);
+
+        const total = totalSettled.status === 'fulfilled' ? totalSettled.value : 0;
+
+        let online = 0;
+        let warnings = 0;
+        let latency = 0;
+
+        if (onlineSettled.status === 'fulfilled' && onlineSettled.value) {
+            const val = onlineSettled.value;
+            online = val.count || 0;
+            const devices = val.devices || {};
+            latency = val.latency || 0;
+            warnings = await fetchDeviceWarnings(devices);
         } else {
-            setTimeout(updateStats, 100);
-            return;
+            warnings = await fetchDeviceWarnings();
+            latency = await pingAPI();
         }
-    }
 
-    // Chart configuration
+        return {
+            totalDevices: total,
+            onlineDevices: online,
+            warnings: warnings,
+            latency: latency
+        };
+    } catch (error) {
+        return {
+            totalDevices: 0,
+            onlineDevices: 0,
+            warnings: 0,
+            latency: 0
+        };
+    }
+}
+
+// Update stats cards
+function updateStats() {
+    const totalDevicesEl = document.getElementById('totalDevices');
+    const onlineDevicesEl = document.getElementById('onlineDevices');
+    const apiLatencyEl = document.getElementById('apiLatency');
+    const currentWarningsEl = document.getElementById('currentWarnings');
+    const lastUpdatedEl = document.getElementById('lastUpdated');
+    
+    if (totalDevicesEl && onlineDevicesEl && apiLatencyEl && currentWarningsEl && lastUpdatedEl) {
+        totalDevicesEl.textContent = totalDevices;
+        onlineDevicesEl.textContent = onlineDevices;
+        apiLatencyEl.textContent = (apiLatency && apiLatency > 0) ? (apiLatency + ' ms') : '--';
+        currentWarningsEl.textContent = currentWarnings;
+        
+        const now = new Date();
+        lastUpdatedEl.textContent = now.toLocaleString();
+    }
+}
+
+// Update chart with new live data
+function updateLiveDataChart(metricsChart, newData) {
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString();
+    
+    liveData.labels.push(timeLabel);
+    liveData.onlineDevices.push(newData.onlineDevices);
+    liveData.warnings.push(newData.warnings);
+    liveData.maxDevices.push(newData.totalDevices);
+    
+    if (liveData.labels.length > 20) {
+        liveData.labels.shift();
+        liveData.onlineDevices.shift();
+        liveData.warnings.shift();
+        liveData.maxDevices.shift();
+    }
+    
+    if (metricsChart) {
+        metricsChart.data.labels = liveData.labels;
+        metricsChart.data.datasets[0].data = liveData.onlineDevices;
+        metricsChart.data.datasets[1].data = liveData.warnings;
+        metricsChart.data.datasets[2].data = liveData.maxDevices;
+        metricsChart.options.scales.y.suggestedMax = newData.totalDevices + 5;
+        metricsChart.update();
+    }
+}
+
+// Refresh live dashboard
+async function refreshLiveDashboard(metricsChart, currentDataRange) {
+    if (window.dashboardRefreshing) return;
+    window.dashboardRefreshing = true;
+
+    try {
+        const newData = await fetchLiveData();
+
+        if (newData) {
+            totalDevices = newData.totalDevices;
+            onlineDevices = newData.onlineDevices;
+            currentWarnings = newData.warnings;
+            apiLatency = newData.latency;
+
+            updateStats();
+
+            if (currentDataRange === 'live') {
+                updateLiveDataChart(metricsChart, newData);
+            }
+            
+            if (!window.historicalCounter) window.historicalCounter = 0;
+            window.historicalCounter++;
+            
+            if (window.historicalCounter >= 60) {
+                await saveHistoricalDataPoint();
+                window.historicalCounter = 0;
+                
+                if (currentDataRange !== 'live') {
+                    await loadAllHistoricalData();
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Refresh error:', error);
+    } finally {
+        window.dashboardRefreshing = false;
+    }
+}
+
+// Main initialization function
+async function initDashboard() {
+    console.log('Initializing dashboard...');
+    
     const metricsChartEl = document.getElementById('metricsChart');
     if (!metricsChartEl) {
         setTimeout(initDashboard, 100);
@@ -283,9 +391,18 @@ async function initDashboard() {
     
     const ctx = metricsChartEl.getContext('2d');
     let chartType = 'line';
-    let currentDataRange = 'live'; // Default to live view
+    let currentDataRange = 'live';
+    let metricsChart = null;
 
-    // Load historical data from server
+    // Check for auth token
+    const token = localStorage.getItem('eews_auth_token');
+    if (!token) {
+        console.log('No auth token found, redirecting to login...');
+        window.location.href = './login.html';
+        return;
+    }
+
+    // Load historical data
     await loadAllHistoricalData();
 
     // Live chart configuration
@@ -320,97 +437,91 @@ async function initDashboard() {
                     tension: 0.4,
                     fill: true,
                     borderWidth: 2,
-                    borderDash: [5, 5] // Dashed line for max devices
+                    borderDash: [5, 5]
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: {
-                duration: 750
-            },
+            animation: { duration: 750 },
             plugins: {
-                legend: {
-                    position: 'top'
-                },
-                title: {
-                    display: false
-                }
+                legend: { position: 'top' },
+                title: { display: false }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    suggestedMax: totalDevices + 5
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
+                y: { beginAtZero: true, suggestedMax: totalDevices + 5 },
+                x: { grid: { display: false } }
             }
         }
     };
 
-    // Start with live chart by default
-    let metricsChart = new Chart(ctx, liveChartConfig);
+    // Create initial chart
+    metricsChart = new Chart(ctx, liveChartConfig);
     
-    // Initialize live data if empty
     if (liveData.labels.length === 0) {
         initializeLiveData();
     }
-    
-    // Update chart with initial live data
-    updateLiveDataChart({
-        totalDevices: totalDevices,
-        onlineDevices: onlineDevices,
-        warnings: currentWarnings,
-        latency: apiLatency
-    });
 
     // Chart type switching
     const chartButtons = document.querySelectorAll('.chart-controls button');
     if (chartButtons.length > 0) {
         chartButtons.forEach(button => {
             button.addEventListener('click', () => {
-                // Remove active class from all buttons
                 chartButtons.forEach(btn => btn.classList.remove('active'));
-                
-                // Add active class to clicked button
                 button.classList.add('active');
-                
-                // Update chart type
                 chartType = button.dataset.type;
-                metricsChart.config.type = chartType;
-                metricsChart.update();
+                
+                if (metricsChart) {
+                    if (currentDataRange === 'live') {
+                        metricsChart.config.type = chartType;
+                        metricsChart.update();
+                    } else {
+                        metricsChart.destroy();
+                        const historicalConfig = {
+                            type: chartType,
+                            data: apiData[currentDataRange],
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'top' },
+                                    title: { display: false }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true }
+                                }
+                            }
+                        };
+                        metricsChart = new Chart(ctx, historicalConfig);
+                    }
+                }
             });
         });
     }
 
-    // Date range filter switching
+    // Date range switching
     const dateRangeSelect = document.getElementById('dateRangeSelect');
     if (dateRangeSelect) {
-        // Set live as default selection
         dateRangeSelect.value = 'live';
         
         dateRangeSelect.addEventListener('change', async () => {
-            // Update data range
             currentDataRange = dateRangeSelect.value;
             
             if (currentDataRange === 'live') {
-                // Switch to live chart
-                metricsChart.destroy();
+                if (metricsChart) metricsChart.destroy();
                 metricsChart = new Chart(ctx, liveChartConfig);
                 
-                // Initialize live data if empty
                 if (liveData.labels.length === 0) {
                     initializeLiveData();
                 }
             } else {
-                // Switch to historical chart
-                metricsChart.destroy();
+                if (!apiData[currentDataRange] || !apiData[currentDataRange].labels) {
+                    await loadAllHistoricalData();
+                }
                 
-                // Create chart with historical data
+                if (metricsChart) metricsChart.destroy();
+                
                 const historicalConfig = {
                     type: chartType,
                     data: apiData[currentDataRange],
@@ -418,17 +529,11 @@ async function initDashboard() {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                position: 'top'
-                            },
-                            title: {
-                                display: false
-                            }
+                            legend: { position: 'top' },
+                            title: { display: false }
                         },
                         scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                            y: { beginAtZero: true }
                         }
                     }
                 };
@@ -438,137 +543,7 @@ async function initDashboard() {
         });
     }
 
-    // Fetch and update all live data
-    async function fetchLiveData() {
-        try {
-            // Run total devices and online devices in parallel
-            const [totalSettled, onlineSettled] = await Promise.allSettled([
-                fetchTotalDevices(),
-                fetchOnlineDevices()
-            ]);
-
-            const total = totalSettled.status === 'fulfilled' ? totalSettled.value : 0;
-
-            let online = 0;
-            let warnings = 0;
-            let latency = 0;
-
-            if (onlineSettled.status === 'fulfilled' && onlineSettled.value) {
-                const val = onlineSettled.value;
-                online = val.count || 0;
-                const devices = val.devices || {};
-                latency = val.latency || 0;
-
-                // Compute warnings from devices result
-                warnings = await fetchDeviceWarnings(devices);
-            } else {
-                // Online fetch failed; fallback
-                warnings = await fetchDeviceWarnings();
-                latency = await pingAPI();
-            }
-
-            return {
-                totalDevices: total,
-                onlineDevices: online,
-                warnings: warnings,
-                latency: latency
-            };
-        } catch (error) {
-            // Fallback to zeros on unexpected error
-            return {
-                totalDevices: 0,
-                onlineDevices: 0,
-                warnings: 0,
-                latency: 0
-            };
-        }
-    }
-
-    // Update chart with new live data
-    function updateLiveDataChart(newData) {
-        const now = new Date();
-        const timeLabel = now.toLocaleTimeString();
-        
-        // Add new data point
-        liveData.labels.push(timeLabel);
-        liveData.onlineDevices.push(newData.onlineDevices);
-        liveData.warnings.push(newData.warnings);
-        liveData.maxDevices.push(newData.totalDevices);
-        
-        // Keep only last 20 data points
-        if (liveData.labels.length > 20) {
-            liveData.labels.shift();
-            liveData.onlineDevices.shift();
-            liveData.warnings.shift();
-            liveData.maxDevices.shift();
-        }
-        
-        // Update chart
-        metricsChart.data.labels = liveData.labels;
-        metricsChart.data.datasets[0].data = liveData.onlineDevices;
-        metricsChart.data.datasets[1].data = liveData.warnings;
-        metricsChart.data.datasets[2].data = liveData.maxDevices;
-        
-        // Update y-axis max based on current total devices
-        metricsChart.options.scales.y.suggestedMax = newData.totalDevices + 5;
-        
-        metricsChart.update();
-    }
-
-    // Live dashboard refresh - updates everything every 1 second
-    async function refreshLiveDashboard() {
-        // Prevent overlapping runs if the previous fetch hasn't completed
-        if (window.dashboardRefreshing) return;
-        window.dashboardRefreshing = true;
-
-        try {
-            const newData = await fetchLiveData();
-
-            if (newData) {
-                // Update global variables
-                totalDevices = newData.totalDevices;
-                onlineDevices = newData.onlineDevices;
-                currentWarnings = newData.warnings;
-                apiLatency = newData.latency;
-
-                // Update stats cards
-                updateStats();
-
-                // Update live chart if on live view
-                if (currentDataRange === 'live') {
-                    updateLiveDataChart(newData);
-                }
-                
-                // Save to historical database every minute (every 60 refreshes)
-                // Using a counter to track time
-                if (!window.historicalCounter) window.historicalCounter = 0;
-                window.historicalCounter++;
-                
-                if (window.historicalCounter >= 60) { // ~1 minute at 1 second intervals
-                    await saveHistoricalDataPoint();
-                    window.historicalCounter = 0;
-                    
-                    // Reload historical data for other views
-                    if (currentDataRange !== 'live') {
-                        await loadAllHistoricalData();
-                    }
-                }
-            }
-        } catch (error) {
-            // Silent error handling
-        } finally {
-            // Allow the next refresh to run
-            window.dashboardRefreshing = false;
-        }
-    }
-
-    // Initialize dashboard
-    updateStats();
-    
-    // Initialize live data
-    initializeLiveData();
-    
-    // Initial data fetch and chart setup
+    // Initial data fetch
     const initialData = await fetchLiveData();
     if (initialData) {
         totalDevices = initialData.totalDevices;
@@ -578,27 +553,34 @@ async function initDashboard() {
         
         updateStats();
         
-        // If already on live view, update the chart
         if (currentDataRange === 'live') {
-            updateLiveDataChart(initialData);
+            updateLiveDataChart(metricsChart, initialData);
         }
     }
 
-    // Refresh live dashboard every 1 second
+    // Clear any existing interval
     if (window.dashboardInterval) {
         clearInterval(window.dashboardInterval);
-        const idx = runningIntervals.indexOf(window.dashboardInterval);
-        if (idx !== -1) runningIntervals.splice(idx, 1);
     }
 
-    window.dashboardInterval = setInterval(refreshLiveDashboard, 1000);
-    runningIntervals.push(window.dashboardInterval);
+    // Set new interval
+    window.dashboardInterval = setInterval(() => {
+        refreshLiveDashboard(metricsChart, currentDataRange);
+    }, 1000);
 
     // Run one immediate refresh
-    refreshLiveDashboard();
+    refreshLiveDashboard(metricsChart, currentDataRange);
 }
 
-// Only export the initDashboard function for external use
+// Make initDashboard globally available
+window.initDashboard = initDashboard;
+
+// Auto-initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    initDashboard();
+});
+
+// Export for module use
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { initDashboard };
 }

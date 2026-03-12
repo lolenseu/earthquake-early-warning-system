@@ -31,28 +31,36 @@ function createDeviceCard(deviceInfo, liveDevice) {
     card.className = 'device-card';
     
     const gForce = liveDevice?.g_force || 0;
-    let statusClass = 'status-offline';
     let statusText = 'Offline';
-    let gForceText = '0.0';
     let statusSign = 'Normal';
     let statusSignClass = 'status-sign-normal';
-    let iconColor = '#007bff'; // Default blue for offline
+    let iconColor = '#007bff';
     
     if (liveDevice) {
-        statusClass = 'status-online';
         statusText = 'Online';
-        iconColor = '#28a745'; // Green for online
+        iconColor = '#28a745';
         
-        gForceText = `${gForce.toFixed(1)}`;
         if (gForce > 1.35) {
             statusSign = 'Earthquake';
             statusSignClass = 'status-sign-warning';
-            iconColor = '#dc3545'; // Red for earthquake
-        } else {
-            statusSign = 'Normal';
-            statusSignClass = 'status-sign-normal';
+            iconColor = '#dc3545';
         }
     }
+
+    // Create click handler for the card
+    card.onclick = function() {
+        console.log('Card clicked for device:', deviceInfo.device_id);
+        if (window.openDeviceModal) {
+            window.openDeviceModal(deviceInfo, liveDevice);
+        } else {
+            console.error('openDeviceModal not found');
+            alert('Modal function not loaded. Please refresh.');
+        }
+    };
+
+    // Safely stringify for the more_vert button
+    const deviceInfoStr = JSON.stringify(deviceInfo).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const liveDeviceStr = liveDevice ? JSON.stringify(liveDevice).replace(/'/g, "\\'").replace(/"/g, '&quot;') : 'null';
 
     card.innerHTML = `
         <div class="device-icon" style="background-color: ${iconColor}">
@@ -73,25 +81,24 @@ function createDeviceCard(deviceInfo, liveDevice) {
                 </div>
                 <div class="device-detail">
                     <span class="label">Magnitude:</span>
-                    <span class="value">${gForceText}</span>
-                </div>
-                <div class="device-detail">
-                    <span class="label">Coordinates:</span>
-                    <span class="value">${deviceInfo.latitude.toFixed(4)}, ${deviceInfo.longitude.toFixed(4)}</span>
+                    <span class="value">${gForce.toFixed(1)}</span>
                 </div>
                 <div class="device-detail">
                     <span class="label">Location:</span>
                     <span class="value">${deviceInfo.location || 'Unknown'}</span>
                 </div>
             </div>
-            <span class="material-icons action-btn">more_vert</span>
+            <span class="material-icons action-btn" onclick="event.stopPropagation(); window.openDeviceModal(${deviceInfoStr}, ${liveDeviceStr})">more_vert</span>
         </div>
     `;
     
     return card;
 }
 
-async function initDevices() {
+// Make initDevices globally available
+window.initDevices = async function() {
+    console.log('Initializing devices...');
+    
     // Get elements after DOM is loaded
     deviceGrid = document.getElementById('deviceGrid');
     lastUpdated = document.getElementById('lastUpdated');
@@ -101,41 +108,32 @@ async function initDevices() {
         return;
     }
     
-    console.log('Initializing devices...');
-    
     const devicesList = await fetchDevicesList();
     const liveDevices = await fetchLiveDevices();
     
-    console.log('Devices list:', devicesList);
-    console.log('Live devices:', liveDevices);
+    console.log('Devices loaded:', devicesList.length);
     
     deviceGrid.innerHTML = '';
     
-    devicesList.forEach(device => {
-        const liveDevice = liveDevices[device.device_id];
-        deviceGrid.appendChild(createDeviceCard(device, liveDevice));
-    });
+    if (devicesList.length === 0) {
+        deviceGrid.innerHTML = '<div class="no-devices"><span class="material-icons">router</span><p>No devices found</p></div>';
+    } else {
+        devicesList.forEach(device => {
+            const liveDevice = liveDevices[device.device_id];
+            deviceGrid.appendChild(createDeviceCard(device, liveDevice));
+        });
+    }
     
     if (lastUpdated) {
         lastUpdated.textContent = new Date().toLocaleString();
     }
-
-    // Ensure a single tracked interval for updates (1s)
-    if (!window.devicesInterval || runningIntervals.indexOf(window.devicesInterval) === -1) {
-        // Clean up stale interval id reference if present
-        if (window.devicesInterval) {
-            try { clearInterval(window.devicesInterval); } catch (e) {}
-            const idx = runningIntervals.indexOf(window.devicesInterval);
-            if (idx !== -1) runningIntervals.splice(idx, 1);
-        }
-
-        if (typeof createInterval !== 'undefined') {
-            window.devicesInterval = createInterval(initDevices, 1000);
-        } else {
-            window.devicesInterval = setInterval(initDevices, 1000);
-            runningIntervals.push(window.devicesInterval);
-        }
-    }
 }
 
-// NOTE: Do not start timers on DOMContentLoaded here. Pages are loaded by script.js which calls initDevices when necessary.
+// Set up interval for updates (every 5 seconds)
+if (!window.devicesInterval) {
+    window.devicesInterval = setInterval(() => {
+        if (window.initDevices) {
+            window.initDevices();
+        }
+    }, 5000);
+}

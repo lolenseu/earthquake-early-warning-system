@@ -1,0 +1,98 @@
+<!-- device-modal.html -->
+
+<!-- Device Detail Modal - Separate component -->
+<div id="deviceDetailModal" class="device-modal">
+    <div class="device-modal-content">
+        <div class="device-modal-header">
+            <div class="device-header-left">
+                <span class="material-icons device-avatar" id="modalDeviceIcon">router</span>
+                <div class="device-title">
+                    <h2 id="modalDeviceName">Device Details</h2>
+                </div>
+            </div>
+            <!-- SIMPLE ONCLICK - THIS WILL WORK -->
+            <button class="device-modal-close" id="closeDeviceModal" onclick="window.closeModal(); return false;">&times;</button>
+        </div>
+        
+        <div class="device-modal-body">
+            <!-- Full Device ID Display -->
+            <div class="device-full-id">
+                <span class="material-icons">qr_code_scanner</span>
+                <span id="modalFullDeviceId">Loading...</span>
+            </div>
+
+            <!-- Device Info Section -->
+            <div class="device-section">
+                <h3 class="device-section-title">
+                    <span class="material-icons">info</span>
+                    Device Information
+                </h3>
+                <div class="device-info-grid">
+                    <div class="device-info-item">
+                        <label>Device ID</label>
+                        <div class="device-info-value" id="modalDeviceId">-</div>
+                    </div>
+                    <div class="device-info-item">
+                        <label>Status</label>
+                        <div class="device-info-value" id="modalDeviceStatusText">-</div>
+                    </div>
+                    <div class="device-info-item">
+                        <label>Location</label>
+                        <div class="device-info-value" id="modalDeviceLocation">-</div>
+                    </div>
+                    <div class="device-info-item">
+                        <label>Coordinates</label>
+                        <div class="device-info-value" id="modalDeviceCoordinates">-</div>
+                    </div>
+                    <div class="device-info-item">
+                        <label>Registered</label>
+                        <div class="device-info-value" id="modalDeviceRegistered">-</div>
+                    </div>
+                    <div class="device-info-item">
+                        <label>Last Seen</label>
+                        <div class="device-info-value" id="modalDeviceLastSeen">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensor Data Section -->
+            <div class="device-section">
+                <h3 class="device-section-title">
+                    <span class="material-icons">sensors</span>
+                    Live Sensor Readings
+                </h3>
+                
+                <div class="sensor-grid">
+                    <div class="sensor-card">
+                        <span class="material-icons sensor-icon">explore</span>
+                        <div class="sensor-data">
+                            <span class="sensor-label">X-Axis</span>
+                            <span class="sensor-value" id="modalSensorX">0.00</span>
+                        </div>
+                    </div>
+                    <div class="sensor-card">
+                        <span class="material-icons sensor-icon">explore</span>
+                        <div class="sensor-data">
+                            <span class="sensor-label">Y-Axis</span>
+                            <span class="sensor-value" id="modalSensorY">0.00</span>
+                        </div>
+                    </div>
+                    <div class="sensor-card">
+                        <span class="material-icons sensor-icon">explore</span>
+                        <div class="sensor-data">
+                            <span class="sensor-label">Z-Axis</span>
+                            <span class="sensor-value" id="modalSensorZ">0.00</span>
+                        </div>
+                    </div>
+                    <div class="sensor-card">
+                        <span class="material-icons sensor-icon">g_mobiledata</span>
+                        <div class="sensor-data">
+                            <span class="sensor-label">G-Force</span>
+                            <span class="sensor-value" id="modalSensorGForce">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
