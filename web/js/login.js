@@ -1,7 +1,7 @@
-// Password toggle functionality
-function togglePassword() {
-    const passwordInput = document.getElementById('password');
-    const passwordIcon = document.getElementById('password-icon');
+// Password toggle functionality with specific IDs
+function togglePassword(inputId, iconId) {
+    const passwordInput = document.getElementById(inputId);
+    const passwordIcon = document.getElementById(iconId);
     
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
@@ -13,24 +13,239 @@ function togglePassword() {
 }
 
 // Auto-hide message after 5 seconds
-function autoHideMessage() {
+function autoHideMessage(elementId) {
     setTimeout(() => {
-        const msg = document.getElementById('msg');
-        if (msg.classList.contains('success') || msg.classList.contains('error')) {
+        const msg = document.getElementById(elementId);
+        if (msg && (msg.classList.contains('success') || msg.classList.contains('error'))) {
             msg.style.display = 'none';
             msg.className = 'message';
         }
     }, 5000);
 }
 
-// Show message function with aria-live for accessibility
-function showMessage(message, type) {
-    const msg = document.getElementById("msg");
-    msg.textContent = message;
-    msg.className = `message ${type}`;
-    msg.style.display = 'block';
-    msg.setAttribute('aria-live', 'polite');
-    autoHideMessage();
+// Show message function
+function showMessage(elementId, message, type) {
+    const msg = document.getElementById(elementId);
+    if (msg) {
+        msg.textContent = message;
+        msg.className = `message ${type}`;
+        msg.style.display = 'block';
+        msg.setAttribute('aria-live', 'polite');
+        autoHideMessage(elementId);
+    }
+}
+
+// Password strength checker
+function checkPasswordStrength(password) {
+    let strength = 0;
+    
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    
+    return strength;
+}
+
+// Update password strength meter
+function updatePasswordStrength(password) {
+    const strengthFill = document.getElementById('strengthFill');
+    const strengthText = document.getElementById('strengthText');
+    
+    if (!password) {
+        strengthFill.className = 'strength-fill';
+        strengthText.textContent = 'Enter password';
+        return;
+    }
+    
+    const strength = checkPasswordStrength(password);
+    
+    strengthFill.className = 'strength-fill';
+    
+    if (strength <= 1) {
+        strengthFill.classList.add('weak');
+        strengthText.textContent = 'Weak password';
+    } else if (strength <= 2) {
+        strengthFill.classList.add('medium');
+        strengthText.textContent = 'Medium password';
+    } else {
+        strengthFill.classList.add('strong');
+        strengthText.textContent = 'Strong password';
+    }
+}
+
+// Modal functions
+function openForgotPasswordModal() {
+    const modal = document.getElementById('forgotPasswordModal');
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    
+    // Reset form
+    document.getElementById('resetPasswordForm').reset();
+    document.getElementById('resetMsg').style.display = 'none';
+    updatePasswordStrength('');
+}
+
+function closeForgotPasswordModal() {
+    const modal = document.getElementById('forgotPasswordModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+}
+
+// Reset password function
+async function resetPassword(event) {
+    event.preventDefault();
+    
+    const resetKey = document.getElementById('resetKey').value.trim();
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const resetBtn = document.getElementById('resetBtn');
+    
+    // Validation
+    if (!resetKey) {
+        showMessage('resetMsg', 'Please enter the recovery key', 'error');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showMessage('resetMsg', 'Password must be at least 6 characters long', 'error');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showMessage('resetMsg', 'Passwords do not match', 'error');
+        return;
+    }
+    
+    // Disable button and show loading
+    resetBtn.disabled = true;
+    resetBtn.innerHTML = `
+        <span class="material-icons rotating">refresh</span>
+        Resetting...
+    `;
+    
+    try {
+        // Call the API to reset password
+        const response = await fetch("https://lolenseu.pythonanywhere.com/pipeline/eews/reset_password", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ 
+                key: resetKey,
+                new_password: newPassword
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage('resetMsg', 'Password reset successful! You can now login with your new password.', 'success');
+            
+            // Reset form and close modal after 2 seconds
+            setTimeout(() => {
+                closeForgotPasswordModal();
+                // Clear password field in login form
+                document.getElementById('password').value = '';
+                // Show success message in login form
+                showMessage('msg', 'Password reset successful! Please login with your new password.', 'success');
+            }, 2000);
+        } else {
+            showMessage('resetMsg', data.message || 'Invalid recovery key', 'error');
+            resetBtn.disabled = false;
+            resetBtn.innerHTML = `
+                <span class="material-icons">refresh</span>
+                Reset Password
+            `;
+        }
+    } catch (error) {
+        console.error('Reset error:', error);
+        showMessage('resetMsg', 'Network error. Please try again.', 'error');
+        resetBtn.disabled = false;
+        resetBtn.innerHTML = `
+            <span class="material-icons">refresh</span>
+            Reset Password
+        `;
+    }
+}
+
+// Enhanced login function
+async function login(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const remember = document.getElementById("remember").checked;
+    
+    const loginBtn = document.getElementById("loginBtn");
+    const originalText = loginBtn.innerHTML;
+    
+    // Validation
+    if (!username || !password) {
+        showMessage('msg', 'Please enter both username and password.', 'error');
+        return;
+    }
+    
+    // Create ripple effect
+    createRipple({ currentTarget: loginBtn });
+    
+    // Disable button and show loading
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = `
+        Logging in...
+    `;
+    
+    try {
+        const res = await fetch("https://lolenseu.pythonanywhere.com/pipeline/eews/login", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ 
+                username, 
+                password,
+                remember
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            showMessage('msg', 'Login successful! Redirecting...', 'success');
+            
+            if (remember) {
+                localStorage.setItem('eews_remember', 'true');
+                localStorage.setItem('eews_username', username);
+            } else {
+                localStorage.setItem('eews_remember', 'false');
+                localStorage.removeItem('eews_username');
+            }
+            
+            if (data.token) {
+                localStorage.setItem('eews_auth_token', data.token);
+            }
+            
+            setTimeout(() => {
+                window.location.href = "layout.html";
+            }, 1500);
+        } else {
+            showMessage('msg', data.message || 'Invalid credentials. Please try again.', 'error');
+            document.getElementById("password").value = '';
+            
+            loginBtn.style.animation = 'shake 0.5s ease-in-out';
+            loginBtn.style.borderColor = '#e53e3e';
+            loginBtn.style.backgroundColor = '#ffebee';
+            loginBtn.style.color = '#e53e3e';
+            
+            setTimeout(() => resetLoginButton(loginBtn, originalText), 2000);
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showMessage('msg', 'Network error. Please check your connection and try again.', 'error');
+        resetLoginButton(loginBtn, originalText);
+    }
 }
 
 // Create ripple effect
@@ -60,7 +275,7 @@ function createRipple(event) {
     }, 600);
 }
 
-// Reset login button to default state
+// Reset login button
 function resetLoginButton(button, originalText) {
     button.disabled = false;
     button.innerHTML = originalText;
@@ -70,93 +285,69 @@ function resetLoginButton(button, originalText) {
     button.style.animation = '';
 }
 
-// Enhanced login function
-async function login(event) {
-    event.preventDefault(); // Prevent form submission
-    
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
-    const remember = document.getElementById("remember").checked;
-    
-    const loginBtn = document.getElementById("loginBtn");
-    const originalText = loginBtn.innerHTML;
-    
-    // Validation
-    if (!username || !password) {
-        showMessage('Please enter both username and password.', 'error');
-        return;
+// Add CSS animation for rotating icon
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes rotating {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
     
-    // Create ripple effect
-    createRipple({ currentTarget: loginBtn });
+    .rotating {
+        animation: rotating 1s linear infinite;
+    }
     
-    // Disable button and show loading state
-    loginBtn.disabled = true;
-    loginBtn.innerHTML = `
-        Logging in...
-    `;
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+`;
+document.head.appendChild(style);
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Login button
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', login);
+    }
     
-    try {
-        const res = await fetch("https://lolenseu.pythonanywhere.com/pipeline/eews/login", {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({ 
-                username, 
-                password,
-                remember
-            })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-            showMessage('Login successful! Redirecting...', 'success');
-            
-            // Save username and remember flag
-            if (remember) {
-                localStorage.setItem('eews_remember', 'true');
-                localStorage.setItem('eews_username', username);
-            } else {
-                localStorage.setItem('eews_remember', 'false');
-                localStorage.removeItem('eews_username');
-            }
-            
-            // Save auth token
-            if (data.token) {
-                localStorage.setItem('eews_auth_token', data.token);
-            }
-            
-            // Redirect after short delay
-            setTimeout(() => {
-                window.location.href = "layout.html";
-            }, 1500);
-        } else {
-            showMessage(data.message || 'Invalid credentials. Please try again.', 'error');
-            
-            // Clear password for security
-            document.getElementById("password").value = '';
-            
-            // Add shake animation and style for error
-            loginBtn.style.animation = 'shake 0.5s ease-in-out';
-            loginBtn.style.borderColor = '#e53e3e';
-            loginBtn.style.backgroundColor = '#ffebee';
-            loginBtn.style.color = '#e53e3e';
-            
-            // Reset button after animation
-            setTimeout(() => resetLoginButton(loginBtn, originalText), 2000);
+    // Forgot password button
+    const forgotBtn = document.getElementById('forgotPasswordBtn');
+    if (forgotBtn) {
+        forgotBtn.addEventListener('click', openForgotPasswordModal);
+    }
+    
+    // Close modal buttons
+    const closeBtn = document.getElementById('closeModalBtn');
+    const cancelBtn = document.getElementById('cancelResetBtn');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeForgotPasswordModal);
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeForgotPasswordModal);
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', (event) => {
+        const modal = document.getElementById('forgotPasswordModal');
+        if (event.target === modal) {
+            closeForgotPasswordModal();
         }
-    } catch (error) {
-        console.error('Login error:', error);
-        showMessage('Network error. Please check your connection and try again.', 'error');
-        resetLoginButton(loginBtn, originalText);
+    });
+    
+    // Password strength checker
+    const newPassword = document.getElementById('newPassword');
+    if (newPassword) {
+        newPassword.addEventListener('input', (e) => {
+            updatePasswordStrength(e.target.value);
+        });
     }
-}
-
-// Auto-fill username if remembered
-window.addEventListener('load', () => {
+    
+    // Auto-fill username if remembered
     const remembered = localStorage.getItem('eews_remember');
     if (remembered === 'true') {
         const savedUsername = localStorage.getItem('eews_username');
@@ -164,13 +355,5 @@ window.addEventListener('load', () => {
             document.getElementById('username').value = savedUsername;
             document.getElementById('remember').checked = true;
         }
-    }
-});
-
-// Add ripple effect on login button click
-document.addEventListener('DOMContentLoaded', () => {
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', login);
     }
 });

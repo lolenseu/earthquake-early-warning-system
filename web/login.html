@@ -37,7 +37,7 @@
             
             <div class="input-group">
                 <label for="password">Password</label>
-                <div style="position: relative;">
+                <div class="password-wrapper">
                     <input 
                         type="password" 
                         id="password" 
@@ -50,7 +50,7 @@
                     <button 
                         type="button" 
                         class="password-toggle" 
-                        onclick="togglePassword()"
+                        onclick="togglePassword('password', 'password-icon')"
                         aria-label="Toggle password visibility"
                     >
                         <span class="material-icons" id="password-icon">visibility_off</span>
@@ -58,15 +58,120 @@
                 </div>
             </div>
             
-            <div class="remember-me">
-                <input type="checkbox" id="remember" name="remember">
-                <label for="remember">Remember me</label>
+            <div class="form-options">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                
+                <button type="button" class="forgot-password-link" id="forgotPasswordBtn">
+                    Forgot Password?
+                </button>
             </div>
             
             <button type="submit" class="login-btn" id="loginBtn">Login</button>
             
             <div id="msg" class="message" role="alert" aria-live="polite"></div>
         </form>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Reset Password</h2>
+                <button type="button" class="modal-close" id="closeModalBtn">&times;</button>
+            </div>
+            
+            <form id="resetPasswordForm" onsubmit="resetPassword(event)">
+                <!-- Key Input -->
+                <div class="input-group">
+                    <label for="resetKey">
+                        <span class="material-icons">vpn_key</span>
+                        Recovery Key
+                    </label>
+                    <input 
+                        type="text" 
+                        id="resetKey" 
+                        name="resetKey" 
+                        placeholder="Enter your recovery key"
+                        required
+                        autocomplete="off"
+                    >
+                    <small class="input-hint">Enter the recovery key</small>
+                </div>
+
+                <!-- New Password -->
+                <div class="input-group">
+                    <label for="newPassword">
+                        <span class="material-icons">lock</span>
+                        New Password
+                    </label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="newPassword" 
+                            name="newPassword" 
+                            placeholder="Enter new password"
+                            required
+                            minlength="6"
+                        >
+                        <button 
+                            type="button" 
+                            class="password-toggle" 
+                            onclick="togglePassword('newPassword', 'newPasswordIcon')"
+                            aria-label="Toggle password visibility"
+                        >
+                            <span class="material-icons" id="newPasswordIcon">visibility_off</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="input-group">
+                    <label for="confirmPassword">
+                        <span class="material-icons">lock_outline</span>
+                        Confirm Password
+                    </label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            name="confirmPassword" 
+                            placeholder="Confirm new password"
+                            required
+                            minlength="6"
+                        >
+                        <button 
+                            type="button" 
+                            class="password-toggle" 
+                            onclick="togglePassword('confirmPassword', 'confirmPasswordIcon')"
+                            aria-label="Toggle password visibility"
+                        >
+                            <span class="material-icons" id="confirmPasswordIcon">visibility_off</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Password Strength Meter -->
+                <div class="password-strength">
+                    <div class="strength-bar" id="strengthBar">
+                        <div class="strength-fill" id="strengthFill"></div>
+                    </div>
+                    <span class="strength-text" id="strengthText">Enter password</span>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn cancel-btn" id="cancelResetBtn">Cancel</button>
+                    <button type="submit" class="modal-btn reset-btn" id="resetBtn">
+                        <span class="material-icons">refresh</span>
+                        Reset Password
+                    </button>
+                </div>
+            </form>
+
+            <div id="resetMsg" class="message" role="alert"></div>
+        </div>
     </div>
 
     <!-- Local JS -->

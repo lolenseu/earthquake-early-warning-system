@@ -1,0 +1,554 @@
+/* Profile Modal Styles */
+.profile-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    animation: profileFadeIn 0.3s ease;
+}
+
+@keyframes profileFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.profile-modal.show {
+    display: flex;
+}
+
+.profile-modal-content {
+    background: white;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    position: relative;
+    animation: profileSlideIn 0.3s ease;
+}
+
+@keyframes profileSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Profile Modal Header */
+.profile-modal-header {
+    padding: 25px 30px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 24px 24px 0 0;
+}
+
+.profile-header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.profile-avatar {
+    font-size: 48px !important;
+    color: white;
+}
+
+.profile-title h2 {
+    color: white;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.profile-role-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+/* Close Button */
+.profile-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.profile-modal-close:hover {
+    background: rgba(229, 62, 62, 0.3);
+    color: white;
+}
+
+/* Profile Modal Body */
+.profile-modal-body {
+    padding: 30px;
+}
+
+.profile-section {
+    margin-bottom: 30px;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.profile-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #2d3748;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.profile-section-title .material-icons {
+    color: #667eea;
+}
+
+/* Profile Info Grid */
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.profile-info-item {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.profile-info-item label {
+    display: block;
+    font-size: 12px;
+    color: #718096;
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-info-value {
+    font-size: 16px;
+    color: #2d3748;
+    font-weight: 500;
+}
+
+/* Recovery Key Container */
+.recovery-key-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.current-key-box {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.current-key-box label {
+    display: block;
+    font-size: 13px;
+    color: #718096;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* Recovery Key Input */
+.key-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.recovery-key-input {
+    flex: 1;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+    color: #2d3748;
+    background: white;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.recovery-key-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.recovery-key-input::placeholder {
+    color: #a0aec0;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+}
+
+.key-action-btn {
+    background: none;
+    border: none;
+    color: #718096;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.key-action-btn:hover {
+    background: #e2e8f0;
+    color: #667eea;
+}
+
+.input-hint {
+    display: block;
+    font-size: 11px;
+    color: #718096;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Save Key Button - Full width */
+.save-key-btn-full {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.save-key-btn-full:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(72, 187, 120, 0.4);
+}
+
+.save-key-btn-full:active {
+    transform: translateY(0);
+}
+
+.save-key-btn-full:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.save-key-btn-full .material-icons {
+    font-size: 20px;
+}
+
+/* Password Change Section */
+.password-change-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.password-change-container .input-group {
+    margin-bottom: 0;
+}
+
+.password-change-container .input-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.password-change-container .input-group label .material-icons {
+    font-size: 18px;
+    color: #667eea;
+}
+
+.password-change-container .password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-change-container .password-wrapper input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: white;
+    outline: none;
+    font-family: 'Poppins', sans-serif;
+    padding-right: 45px;
+}
+
+.password-change-container .password-wrapper input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.password-change-container .password-wrapper input::placeholder {
+    color: #a0aec0;
+    font-weight: 400;
+    font-size: 14px;
+}
+
+.password-change-container .password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #718096;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.password-change-container .password-toggle:hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.password-change-container .password-toggle .material-icons {
+    font-size: 20px;
+}
+
+/* Password Strength Meter */
+.password-strength {
+    margin: 5px 0 10px;
+}
+
+.strength-bar {
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.strength-fill {
+    height: 100%;
+    width: 0;
+    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-fill.weak {
+    background: #e53e3e;
+    width: 33.33%;
+}
+
+.strength-fill.medium {
+    background: #fbbf24;
+    width: 66.66%;
+}
+
+.strength-fill.strong {
+    background: #48bb78;
+    width: 100%;
+}
+
+.strength-text {
+    font-size: 12px;
+    color: #718096;
+}
+
+/* Password Match Indicator */
+.password-match-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f7fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    margin-top: 10px;
+}
+
+.password-match-indicator .material-icons {
+    font-size: 18px;
+}
+
+.password-match-indicator.match {
+    background: #f0fff4;
+    border-color: #48bb78;
+}
+
+.password-match-indicator.match .material-icons,
+.password-match-indicator.match #matchText {
+    color: #48bb78;
+}
+
+.password-match-indicator.no-match {
+    background: #fff5f5;
+    border-color: #e53e3e;
+}
+
+.password-match-indicator.no-match .material-icons,
+.password-match-indicator.no-match #matchText {
+    color: #e53e3e;
+}
+
+/* Update Password Button - Inside Change Password box */
+.update-password-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    margin-top: 15px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.update-password-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+}
+
+.update-password-btn:active {
+    transform: translateY(0);
+}
+
+.update-password-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.update-password-btn .material-icons {
+    font-size: 20px;
+}
+
+/* Remove footer */
+.profile-modal-footer {
+    display: none;
+}
+
+/* Online Indicator */
+.online-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    background: #48bb78;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.user-avatar {
+    position: relative;
+}
+
+.user-edit-icon {
+    position: absolute;
+    right: 15px;
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.7);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-user:hover .user-edit-icon {
+    opacity: 1;
+}
+
+.sidebar-user {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sidebar-user:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .profile-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .key-input-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .key-action-btn {
+        align-self: flex-end;
+    }
+}

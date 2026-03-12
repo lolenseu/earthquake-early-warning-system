@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/devices.css">
     <link rel="stylesheet" href="css/reports.css">
     <link rel="stylesheet" href="css/api.css">
+    <link rel="stylesheet" href="css/profile.css">
 
     <!-- Online CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -59,21 +60,22 @@
                     </li>
                 </ul>
             </nav>
-            <div class="sidebar-user">
+            
+            <!-- Clickable User Section -->
+            <div class="sidebar-user" id="userProfileBtn">
                 <div class="user-avatar">
                     <img src="icon/eews-icon.png" alt="Admin" id="userAvatar">
+                    <span class="online-indicator"></span>
                 </div>
                 <div class="user-info">
                     <span class="user-name" id="userName">Admin User</span>
-                    <span class="user-role">Administrator</span>
+                    <span class="user-role" id="userRole">Administrator</span>
                 </div>
+                <span class="material-icons user-edit-icon">edit</span>
             </div>
+            
             <div class="sidebar-footer">
                 <ul>
-                    <li class="sidebar-action-li" id="settingsBtn">
-                        <span class="material-icons">settings</span>
-                        <span>Settings</span>
-                    </li>
                     <li class="sidebar-action-li logout-li" id="logoutBtn">
                         <span class="material-icons">logout</span>
                         <span>Logout</span>
@@ -87,6 +89,170 @@
         </main>
     </div>
 
+    <!-- Profile Modal -->
+    <div id="profileModal" class="profile-modal">
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <div class="profile-header-left">
+                    <span class="material-icons profile-avatar">account_circle</span>
+                    <div class="profile-title">
+                        <h2>User Profile</h2>
+                        <span class="profile-role-badge" id="profileRoleBadge">Administrator</span>
+                    </div>
+                </div>
+                <button class="profile-modal-close" id="closeProfileModal">&times;</button>
+            </div>
+            
+            <div class="profile-modal-body">
+                <!-- User Info Section -->
+                <div class="profile-section">
+                    <h3 class="profile-section-title">
+                        <span class="material-icons">info</span>
+                        Account Information
+                    </h3>
+                    <div class="profile-info-grid">
+                        <div class="profile-info-item">
+                            <label>Username</label>
+                            <div class="profile-info-value" id="profileUsername">admin</div>
+                        </div>
+                        <div class="profile-info-item">
+                            <label>Email</label>
+                            <div class="profile-info-value" id="profileEmail">admin@eews.com</div>
+                        </div>
+                        <div class="profile-info-item">
+                            <label>Role</label>
+                            <div class="profile-info-value" id="profileRole">admin</div>
+                        </div>
+                        <div class="profile-info-item">
+                            <label>Member Since</label>
+                            <div class="profile-info-value" id="profileCreatedAt">2024-01-01</div>
+                        </div>
+                        <div class="profile-info-item">
+                            <label>Last Password Reset</label>
+                            <div class="profile-info-value" id="profileLastReset">Never</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recovery Key Section - Simplified to Input -->
+                <div class="profile-section">
+                    <h3 class="profile-section-title">
+                        <span class="material-icons">vpn_key</span>
+                        Recovery Key
+                    </h3>
+                    
+                    <div class="recovery-key-container">
+                        <!-- Current Recovery Key Input -->
+                        <div class="current-key-box">
+                            <label for="recoveryKeyInput">Recovery Key</label>
+                            <div class="key-input-wrapper">
+                                <input 
+                                    type="text" 
+                                    id="recoveryKeyInput" 
+                                    class="recovery-key-input" 
+                                    value="eews_admin"
+                                    placeholder="Enter recovery key"
+                                >
+                                <button class="key-action-btn" onclick="copyToClipboard(document.getElementById('recoveryKeyInput').value)" title="Copy to clipboard">
+                                    <span class="material-icons">content_copy</span>
+                                </button>
+                            </div>
+                            <small class="input-hint">Format: eews_role (e.g., eews_admin, eews_user)</small>
+                        </div>
+
+                        <!-- Save Key Button -->
+                        <button class="save-key-btn-full" id="saveKeyBtn" onclick="saveRecoveryKey()">
+                            <span class="material-icons">save</span>
+                            Save Recovery Key
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Change Password Section -->
+                <div class="profile-section">
+                    <h3 class="profile-section-title">
+                        <span class="material-icons">lock_reset</span>
+                        Change Password
+                    </h3>
+                    
+                    <div class="password-change-container">
+                        <!-- New Password -->
+                        <div class="input-group">
+                            <label for="modalNewPassword">
+                                <span class="material-icons">lock</span>
+                                New Password
+                            </label>
+                            <div class="password-wrapper">
+                                <input 
+                                    type="password" 
+                                    id="modalNewPassword" 
+                                    name="modalNewPassword" 
+                                    placeholder="Enter new password"
+                                    minlength="6"
+                                >
+                                <button 
+                                    type="button" 
+                                    class="password-toggle" 
+                                    onclick="toggleModalPassword('modalNewPassword', 'modalNewPasswordIcon')"
+                                    aria-label="Toggle password visibility"
+                                >
+                                    <span class="material-icons" id="modalNewPasswordIcon">visibility_off</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="input-group">
+                            <label for="modalConfirmPassword">
+                                <span class="material-icons">lock_outline</span>
+                                Confirm Password
+                            </label>
+                            <div class="password-wrapper">
+                                <input 
+                                    type="password" 
+                                    id="modalConfirmPassword" 
+                                    name="modalConfirmPassword" 
+                                    placeholder="Confirm new password"
+                                    minlength="6"
+                                >
+                                <button 
+                                    type="button" 
+                                    class="password-toggle" 
+                                    onclick="toggleModalPassword('modalConfirmPassword', 'modalConfirmPasswordIcon')"
+                                    aria-label="Toggle password visibility"
+                                >
+                                    <span class="material-icons" id="modalConfirmPasswordIcon">visibility_off</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Password Strength Meter -->
+                        <div class="password-strength">
+                            <div class="strength-bar" id="modalStrengthBar">
+                                <div class="strength-fill" id="modalStrengthFill"></div>
+                            </div>
+                            <span class="strength-text" id="modalStrengthText">Enter new password</span>
+                        </div>
+
+                        <!-- Password Match Indicator -->
+                        <div class="password-match-indicator" id="passwordMatchIndicator">
+                            <span class="material-icons" id="matchIcon">info</span>
+                            <span id="matchText">Passwords must match</span>
+                        </div>
+
+                        <!-- Update Password Button - Moved inside Change Password box -->
+                        <button class="update-password-btn" id="updatePasswordBtn" onclick="updatePassword()">
+                            <span class="material-icons">lock_reset</span>
+                            Update Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Removed Footer with Cancel/Save buttons -->
+        </div>
+    </div>
+
     <!-- Local JS -->
     <script src="js/script.js"></script>
     <script src="js/dashboard.js"></script>
@@ -94,6 +260,7 @@
     <script src="js/devices.js"></script>
     <script src="js/reports.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/profile.js"></script>
 
     <!-- Online JS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

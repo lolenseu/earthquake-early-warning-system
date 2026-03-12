@@ -8,7 +8,9 @@ let dashboardRefreshing = false; // Guard to prevent overlapping refreshes
 // API Configuration
 const API_STORAGE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews';
 const API_BASE_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews';
-//const API_BASE_URL = 'https://eews-api.vercel.app/pipeline/eews';
+
+// Historical data storage endpoints
+const HISTORICAL_API_URL = 'https://lolenseu.pythonanywhere.com/pipeline/eews/historical';
 
 // Live data arrays for real-time chart
 let liveData = {
@@ -34,21 +36,88 @@ function initializeLiveData() {
     liveData.maxDevices.push(totalDevices);
 }
 
-// API Data for different time ranges
-const apiData = {
+// API Data for different time ranges (will be populated from server)
+let apiData = {
     day: {
-        labels: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'],
+        labels: [],
         datasets: []
     },
     week: {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        labels: [],
         datasets: []
     },
     month: {
-        labels: ['Day 1', 'Day 5', 'Day 10', 'Day 15', 'Day 20', 'Day 25', 'Day 30'],
+        labels: [],
         datasets: []
     }
 };
+
+// Fetch historical data from server
+async function fetchHistoricalData(range) {
+    try {
+        const response = await fetch(`${HISTORICAL_API_URL}/${range}`, {
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            console.log(`Failed to fetch ${range} data`);
+            return null;
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error(`Error fetching ${range} data:`, error);
+        return null;
+    }
+}
+
+// Save current data point to historical database
+async function saveHistoricalDataPoint() {
+    const now = new Date();
+    const dataPoint = {
+        timestamp: now.toISOString(),
+        total_devices: totalDevices,
+        online_devices: onlineDevices,
+        warnings: currentWarnings,
+        latency: apiLatency
+    };
+    
+    try {
+        const token = localStorage.getItem('eews_auth_token');
+        await fetch(`${HISTORICAL_API_URL}/save`, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(dataPoint)
+        });
+    } catch (error) {
+        console.error('Error saving historical data:', error);
+    }
+}
+
+// Load historical data for all ranges
+async function loadAllHistoricalData() {
+    const ranges = ['day', 'week', 'month'];
+    
+    for (const range of ranges) {
+        const data = await fetchHistoricalData(range);
+        if (data && data.success) {
+            apiData[range] = {
+                labels: data.labels || [],
+                datasets: data.datasets || []
+            };
+            console.log(`Loaded ${range} data:`, data);
+        }
+    }
+}
 
 // Fetch functions for live data
 async function fetchTotalDevices() {
@@ -181,7 +250,7 @@ async function pingAPI() {
 } 
 
 // Initialize dashboard function - called when dashboard content is loaded
-function initDashboard() {
+async function initDashboard() {
     // Update stats cards
     function updateStats() {
         const totalDevicesEl = document.getElementById('totalDevices');
@@ -214,7 +283,10 @@ function initDashboard() {
     
     const ctx = metricsChartEl.getContext('2d');
     let chartType = 'line';
-    let currentDataRange = 'live'; // Default to live view instead of day
+    let currentDataRange = 'live'; // Default to live view
+
+    // Load historical data from server
+    await loadAllHistoricalData();
 
     // Live chart configuration
     const liveChartConfig = {
@@ -280,28 +352,6 @@ function initDashboard() {
         }
     };
 
-    const chartConfig = {
-        type: chartType,
-        data: apiData[currentDataRange],
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top'
-                },
-                title: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    };
-
     // Start with live chart by default
     let metricsChart = new Chart(ctx, liveChartConfig);
     
@@ -343,7 +393,7 @@ function initDashboard() {
         // Set live as default selection
         dateRangeSelect.value = 'live';
         
-        dateRangeSelect.addEventListener('change', () => {
+        dateRangeSelect.addEventListener('change', async () => {
             // Update data range
             currentDataRange = dateRangeSelect.value;
             
@@ -359,13 +409,36 @@ function initDashboard() {
             } else {
                 // Switch to historical chart
                 metricsChart.destroy();
-                chartConfig.data = apiData[currentDataRange];
-                metricsChart = new Chart(ctx, chartConfig);
+                
+                // Create chart with historical data
+                const historicalConfig = {
+                    type: chartType,
+                    data: apiData[currentDataRange],
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            title: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                };
+                
+                metricsChart = new Chart(ctx, historicalConfig);
             }
         });
     }
 
-    // Fetch and update all live data (latitude taken from the online devices fetch)
+    // Fetch and update all live data
     async function fetchLiveData() {
         try {
             // Run total devices and online devices in parallel
@@ -386,10 +459,10 @@ function initDashboard() {
                 const devices = val.devices || {};
                 latency = val.latency || 0;
 
-                // Compute warnings from devices result (fast, no extra network)
+                // Compute warnings from devices result
                 warnings = await fetchDeviceWarnings(devices);
             } else {
-                // Online fetch failed; fallback: compute warnings by fetching devices and ping for latency
+                // Online fetch failed; fallback
                 warnings = await fetchDeviceWarnings();
                 latency = await pingAPI();
             }
@@ -442,7 +515,7 @@ function initDashboard() {
         metricsChart.update();
     }
 
-    // Live dashboard refresh - updates everything every 1 second (guarded)
+    // Live dashboard refresh - updates everything every 1 second
     async function refreshLiveDashboard() {
         // Prevent overlapping runs if the previous fetch hasn't completed
         if (window.dashboardRefreshing) return;
@@ -465,6 +538,21 @@ function initDashboard() {
                 if (currentDataRange === 'live') {
                     updateLiveDataChart(newData);
                 }
+                
+                // Save to historical database every minute (every 60 refreshes)
+                // Using a counter to track time
+                if (!window.historicalCounter) window.historicalCounter = 0;
+                window.historicalCounter++;
+                
+                if (window.historicalCounter >= 60) { // ~1 minute at 1 second intervals
+                    await saveHistoricalDataPoint();
+                    window.historicalCounter = 0;
+                    
+                    // Reload historical data for other views
+                    if (currentDataRange !== 'live') {
+                        await loadAllHistoricalData();
+                    }
+                }
             }
         } catch (error) {
             // Silent error handling
@@ -481,38 +569,34 @@ function initDashboard() {
     initializeLiveData();
     
     // Initial data fetch and chart setup
-    fetchLiveData().then(newData => {
-        if (newData) {
-            totalDevices = newData.totalDevices;
-            onlineDevices = newData.onlineDevices;
-            currentWarnings = newData.warnings;
-            apiLatency = newData.latency;
-            
-            updateStats();
-            
-            // If already on live view, update the chart
-            if (currentDataRange === 'live') {
-                updateLiveDataChart(newData);
-            }
+    const initialData = await fetchLiveData();
+    if (initialData) {
+        totalDevices = initialData.totalDevices;
+        onlineDevices = initialData.onlineDevices;
+        currentWarnings = initialData.warnings;
+        apiLatency = initialData.latency;
+        
+        updateStats();
+        
+        // If already on live view, update the chart
+        if (currentDataRange === 'live') {
+            updateLiveDataChart(initialData);
         }
-    });
+    }
 
-    // Refresh live dashboard every 1 second - ensure single interval and run immediately
-    // If a previous dashboard interval exists, clear and remove it from tracking
+    // Refresh live dashboard every 1 second
     if (window.dashboardInterval) {
         clearInterval(window.dashboardInterval);
         const idx = runningIntervals.indexOf(window.dashboardInterval);
         if (idx !== -1) runningIntervals.splice(idx, 1);
     }
 
-    // Create a new interval and track it so it can be cleared on page change
     window.dashboardInterval = setInterval(refreshLiveDashboard, 1000);
     runningIntervals.push(window.dashboardInterval);
 
-    // Run one immediate refresh so UI updates right away
+    // Run one immediate refresh
     refreshLiveDashboard();
 }
-
 
 // Only export the initDashboard function for external use
 if (typeof module !== 'undefined' && module.exports) {
