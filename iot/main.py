@@ -266,6 +266,8 @@ def main():
     mode = MODE_NORMAL
     exit_deadline = None
 
+    normal_loop_counter = 0
+
     while True:
 
         if mode == MODE_NORMAL:
@@ -299,8 +301,14 @@ def main():
 
                 continue
 
-            post_data(payload(None))
-            fetch_data()
+
+            normal_loop_counter += 1
+
+            if normal_loop_counter >= 5:
+                post_data(payload(None))
+                #fetch_data()
+                normal_loop_counter = 0
+
 
             if lcd:
                 lcd.move_to(0,0)
